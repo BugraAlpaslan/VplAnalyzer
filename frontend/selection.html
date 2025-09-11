@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSAS Analyzer - Dashboard Selection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Fira Code', monospace;
+            font-weight: 500;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .logo-container {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-placeholder {
+            color: #666;
+            font-size: 20px;
+        }
+
+        .main-container {
+            text-align: center;
+            max-width: 900px;
+            width: 100%;
+            padding: 0 40px;
+        }
+
+        .welcome-section {
+            margin-bottom: 50px;
+        }
+
+        .welcome-text {
+            color: #888;
+            font-size: 18px;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+
+        .title {
+            color: #e0e0e0;
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 60px;
+            line-height: 1.4;
+        }
+
+        .dashboard-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-card {
+            background-color: #1a1a1a;
+            border: 2px solid #2a2a2a;
+            padding: 40px 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .dashboard-card:hover::before {
+            left: 100%;
+        }
+
+        .dashboard-card:hover {
+            border-color: #4a4a4a;
+            background-color: #252525;
+            transform: translateY(-5px);
+        }
+
+        .dashboard-card.vpl:hover {
+            border-color: #4ade80;
+            box-shadow: 0 0 30px rgba(74, 222, 128, 0.3);
+        }
+
+        .dashboard-card.masterdata:hover {
+            border-color: #fb923c;
+            box-shadow: 0 0 30px rgba(251, 146, 60, 0.3);
+        }
+
+        .card-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        .vpl .card-icon {
+            color: #4ade80;
+        }
+
+        .masterdata .card-icon {
+            color: #fb923c;
+        }
+
+        .card-title {
+            color: #e0e0e0;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .card-description {
+            color: #999;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .card-features {
+            text-align: left;
+            margin-bottom: 25px;
+        }
+
+        .feature-item {
+            color: #777;
+            font-size: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-icon {
+            color: #4ade80;
+            font-size: 8px;
+        }
+
+        .masterdata .feature-icon {
+            color: #fb923c;
+        }
+
+        .card-button {
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            border: 1px solid #1a1a1a;
+            padding: 12px 24px;
+            font-size: 12px;
+            font-family: 'Fira Code', monospace;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .vpl .card-button:hover {
+            background-color: #4ade80;
+            color: #0a0a0a;
+            border-color: #4ade80;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+        }
+
+        .masterdata .card-button:hover {
+            background-color: #fb923c;
+            color: #0a0a0a;
+            border-color: #fb923c;
+            box-shadow: 0 0 20px rgba(251, 146, 60, 0.3);
+        }
+
+        .status-section {
+            background-color: #151515;
+            border: 1px solid #2a2a2a;
+            padding: 20px;
+            margin-top: 40px;
+        }
+
+        .status-title {
+            color: #e0e0e0;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .status-label {
+            color: #777;
+            font-size: 11px;
+        }
+
+        .status-value {
+            color: #e0e0e0;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-value.success {
+            color: #4ade80;
+        }
+
+        .status-value.warning {
+            color: #fb923c;
+        }
+
+        .status-value.error {
+            color: #f87171;
+        }
+
+        /* Loading animation */
+        .loading-dot {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: #777;
+            animation: loading 1.4s infinite ease-in-out;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loading {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-options {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .main-container {
+                padding: 0 20px;
+            }
+            
+            .title {
+                font-size: 28px;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <div class="logo-placeholder">🏢</div>
+    </div>
+
+    <div class="main-container">
+        <div class="welcome-section">
+            <div class="welcome-text">Hoş geldiniz</div>
+            <h1 class="title">MSAS Analyzer</h1>
+            <div class="subtitle">
+                VPL analizi ve Masterdata doğrulama için dashboard seçin.<br>
+                Her sistem farklı analiz türleri ve raporlama özellikleri sunar.
+            </div>
+        </div>
+
+        <div class="dashboard-options">
+            <!-- VPL Dashboard -->
+            <div class="dashboard-card vpl" onclick="navigateTo('vpl')">
+                <div class="card-icon">📊</div>
+                <div class="card-title">VPL Dashboard</div>
+                <div class="card-description">
+                    Vehicle Parts List analizi ve parça değişikliklerinin takibi
+                </div>
+                <div class="card-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">●</span>
+                        <span>Parça değişiklikleri analizi</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">●</span>
+                        <span>Required parts kontrolü</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">●</span>
+                        <span>OR grup desteği</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">●</span>
+                        <span>VIN bazlı detay analizi</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">●</span>
+                        <span>Tarihsel karşılaştırma</span>
+                    </div>
+                </div>
+                <button class="card-button">VPL Dashboard'a Git</button>
+            </div>
+
+            <!-- Masterdata Dashboard -->
+            <div class="dashboard-card masterdata" onclick="navigateTo('masterdata')">
+                <div class="card-icon">🔍</div>
+                <div class="card-title">Masterdata Dashboard</div>
+                <div class="card-description">
+                    TEI/OSL dosya analizi ve parametre uyumluluk kontrolü
+                </div>
+                <div class="card-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">●</span>
+                        <span>TEI referans kontrolü</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">●</span>
+                        <span>OSL parametre validasyonu</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">●</span>
+                        <span>CK modülü özel kuralları</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">●</span>
+                        <span>Compliance scoring</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">●</span>
+                        <span>Detaylı violation raporları</span>
+                    </div>
+                </div>
+                <button class="card-button">Masterdata Dashboard'a Git</button>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="status-section">
+            <div class="status-title">📊 Sistem Durumu</div>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="status-label">VPL Sistemi</span>
+                    <span class="status-value" id="vplStatus">
+                        Kontrol ediliyor<span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Masterdata Sistemi</span>
+                    <span class="status-value" id="masterdataStatus">
+                        Kontrol ediliyor<span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Son VPL Analizi</span>
+                    <span class="status-value" id="lastVplAnalysis">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Son Masterdata Analizi</span>
+                    <span class="status-value" id="lastMasterdataAnalysis">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navigation functions
+        function navigateTo(dashboard) {
+            if (dashboard === 'vpl') {
+                window.location.href = '/vpl-dashboard';
+            } else if (dashboard === 'masterdata') {
+                window.location.href = '/masterdata-dashboard';
+            }
+        }
+
+        // Check system health on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSystemHealth();
+        });
+
+        function checkSystemHealth() {
+            fetch('/api/system/health')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateSystemStatus(data.data);
+                    } else {
+                        showSystemError();
+                    }
+                })
+                .catch(error => {
+                    console.error('System health check failed:', error);
+                    showSystemError();
+                });
+        }
+
+        function updateSystemStatus(healthData) {
+            // VPL System Status
+            const vplStatus = document.getElementById('vplStatus');
+            if (healthData.vpl && healthData.vpl.vpl_directory === 'OK') {
+                vplStatus.innerHTML = 'Aktif';
+                vplStatus.className = 'status-value success';
+            } else {
+                vplStatus.innerHTML = 'Sorun Var';
+                vplStatus.className = 'status-value warning';
+            }
+
+            // Masterdata System Status
+            const masterdataStatus = document.getElementById('masterdataStatus');
+            if (healthData.masterdata && healthData.masterdata.masterdata_directory === 'OK') {
+                masterdataStatus.innerHTML = 'Aktif';
+                masterdataStatus.className = 'status-value success';
+            } else {
+                masterdataStatus.innerHTML = 'Sorun Var';
+                masterdataStatus.className = 'status-value warning';
+            }
+
+            // Last analysis dates
+            const lastVplAnalysis = document.getElementById('lastVplAnalysis');
+            if (healthData.vpl && healthData.vpl.latest_vpl_analysis && healthData.vpl.latest_vpl_analysis !== 'NONE') {
+                lastVplAnalysis.innerHTML = formatDate(healthData.vpl.latest_vpl_analysis);
+                lastVplAnalysis.className = 'status-value success';
+            } else {
+                lastVplAnalysis.innerHTML = 'Henüz analiz yok';
+                lastVplAnalysis.className = 'status-value warning';
+            }
+
+            const lastMasterdataAnalysis = document.getElementById('lastMasterdataAnalysis');
+            if (healthData.masterdata && healthData.masterdata.latest_analysis && healthData.masterdata.latest_analysis !== 'NONE') {
+                lastMasterdataAnalysis.innerHTML = formatDate(healthData.masterdata.latest_analysis);
+                lastMasterdataAnalysis.className = 'status-value success';
+            } else {
+                lastMasterdataAnalysis.innerHTML = 'Henüz analiz yok';
+                lastMasterdataAnalysis.className = 'status-value warning';
+            }
+        }
+
+        function showSystemError() {
+            document.getElementById('vplStatus').innerHTML = 'Hata';
+            document.getElementById('vplStatus').className = 'status-value error';
+            document.getElementById('masterdataStatus').innerHTML = 'Hata';
+            document.getElementById('masterdataStatus').className = 'status-value error';
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr || dateStr === 'NONE') return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('tr-TR');
+        }
+
+        // Add hover sound effect (optional)
+        document.querySelectorAll('.dashboard-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                // Optional: Add subtle audio feedback
+                // new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBziR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfCjaZ2fHLeSsFJnvK8N2ONwgXa7zs5qVOEgxOqOPwsmAcBjiX2fHOeC0FI3vG8N+PQAoTYLXo66pUFAlEntz0v2ofDDOW2/LNeSYFJXzJ8NyLOggWbMDt55xLEgxNos3hstoRgTLj4fXYNJ7d5A=').play().catch(() => {});
+            });
+        });
+    </script>
+</body>
+</html>

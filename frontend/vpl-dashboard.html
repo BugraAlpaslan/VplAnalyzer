@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSAS VPL Analyzer - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Fira Code', monospace;
+            font-weight: 500;
+            background-color: #0a0a0a;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+            grid-template-rows: 80px 1fr;
+            gap: 1px;
+            padding: 0;
+        }
+
+        /* Header Area */
+        .header-area {
+            grid-column: 1 / 7;
+            background-color: #151515;
+            border-bottom: 1px solid #1f1f1f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: #e0e0e0;
+        }
+
+        .header-left h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            border: 1px solid #2a2a2a;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .header-btn:hover {
+            background-color: #2a2a2a;
+        }
+
+        /* Left Sidebar - Enhanced with Date Picker */
+        .sidebar {
+            grid-column: 1 / 2;
+            background-color: #111111;
+            border-right: 1px solid #1f1f1f;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .welcome-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #1f1f1f;
+        }
+
+        .welcome-text {
+            color: #777;
+            font-size: 12px;
+        }
+
+        .username {
+            color: #e0e0e0;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* Recent Dates Section */
+        .recent-dates-section {
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            color: #4ade80;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #1f1f1f;
+        }
+
+        .date-card {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 12px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .date-card:hover {
+            background-color: #252525;
+            border-color: #444;
+        }
+
+        .date-card.active {
+            background-color: #0a0a0a;
+            border-color: #4ade80;
+            box-shadow: 0 0 0 1px #4ade80;
+        }
+
+        .date-text {
+            font-size: 11px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .date-details {
+            font-size: 9px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        .reanalyze-btn {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: transparent;
+            border: none;
+            color: #777;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 2px;
+        }
+
+        .reanalyze-btn:hover {
+            color: #e0e0e0;
+            background-color: #2a2a2a;
+        }
+
+        /* Custom Date Picker Section */
+        .custom-date-section {
+            margin-bottom: 20px;
+        }
+
+        .date-picker-container {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .date-picker-label {
+            color: #fb923c;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .date-input {
+            width: 100%;
+            background-color: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            color: #e0e0e0;
+            padding: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: #fb923c;
+        }
+
+        .date-input::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        .load-date-btn {
+            width: 100%;
+            background-color: #fb923c;
+            color: #0f0f0f;
+            border: none;
+            padding: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .load-date-btn:hover {
+            background-color: #f97316;
+        }
+
+        .load-date-btn:disabled {
+            background-color: #2a2a2a;
+            color: #777;
+            cursor: not-allowed;
+        }
+
+        /* Selected Custom Date Display */
+        .selected-date-container {
+            background-color: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            padding: 10px;
+            display: none;
+        }
+
+        .selected-date-container.show {
+            display: block;
+        }
+
+        .selected-date-label {
+            color: #777;
+            font-size: 9px;
+            margin-bottom: 4px;
+        }
+
+        .selected-date-display {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .selected-date-display:hover {
+            background-color: #444;
+        }
+
+        .selected-date-display.active {
+            background-color: #0a0a0a;
+            border-color: #fb923c;
+            box-shadow: 0 0 0 1px #fb923c;
+        }
+
+        .selected-date-text {
+            color: #e0e0e0;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .selected-date-subtitle {
+            color: #777;
+            font-size: 9px;
+            margin-top: 2px;
+        }
+
+        .custom-reanalyze-btn {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: transparent;
+            border: none;
+            color: #777;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 2px;
+        }
+
+        .custom-reanalyze-btn:hover {
+            color: #e0e0e0;
+            background-color: #fb923c;
+        }
+
+        /* Main Content Area - WITH WATERMARK */
+        .main-content {
+            grid-column: 2 / 6;
+            background-color: #131313;
+            border-right: 1px solid #1f1f1f;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* WATERMARK LOGO */
+        .main-content::before {
+            content: 'MSAS VPL ANALYZER';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-25deg);
+            font-family: 'Fira Code', monospace;
+            font-size: 42px;
+            font-weight: 700;
+            color: #ffffff;
+            opacity: 0.015;
+            z-index: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            letter-spacing: 6px;
+        }
+
+        /* Make sure content is above watermark */
+        .main-content > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .content-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #1f1f1f;
+            padding-bottom: 10px;
+        }
+
+        .changes-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .change-item {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 15px;
+            position: relative;
+        }
+
+        .change-item:hover {
+            background-color: #252525;
+        }
+
+        .change-item.added {
+            border-left: 3px solid #4ade80;
+        }
+
+        .change-item.removed {
+            border-left: 3px solid #f87171;
+        }
+
+        .change-item.modified {
+            border-left: 3px solid #fb923c;
+        }
+
+        .change-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .change-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .details-btn {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 6px 12px;
+            font-size: 10px;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .details-btn:hover {
+            background-color: #444;
+        }
+
+        .part-transition {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .old-part {
+            background-color: #fecaca;
+            color: #dc2626;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .new-part {
+            background-color: #bbf7d0;
+            color: #16a34a;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .arrow {
+            color: #777;
+            font-size: 12px;
+        }
+
+        .change-type {
+            background-color: #bfdbfe;
+            color: #2563eb;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .affected-count {
+            color: #777;
+            font-size: 11px;
+        }
+
+        /* Right Sidebar */
+        .right-sidebar {
+            grid-column: 6 / 7;
+            background-color: #111111;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .right-sidebar::before {
+            content: 'MSAS';
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(15deg);
+            font-family: 'Fira Code', monospace;
+            font-size: 24px;
+            font-weight: 600;
+            color: #ffffff;
+            opacity: 0.02;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .right-sidebar > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .missing-parts-section {
+            padding-top: 60px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f87171;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #1f1f1f;
+            padding-bottom: 8px;
+        }
+
+        .missing-item {
+            background-color: #1a1a1a;
+            border-left: 3px solid #f87171;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .missing-item:hover {
+            background-color: #252525;
+        }
+
+        .missing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .missing-info {
+            flex: 1;
+        }
+
+        .missing-details-btn {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 4px 8px;
+            font-size: 9px;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .missing-details-btn:hover {
+            background-color: #444;
+        }
+
+        .missing-part {
+            font-weight: 600;
+            color: #f87171;
+            font-size: 12px;
+        }
+
+        .missing-count {
+            font-size: 10px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #777;
+        }
+
+        .empty-state h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #999;
+        }
+
+        .empty-state p {
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            width: 90%;
+            max-width: 1000px;
+            height: 80%;
+            max-height: 700px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            background-color: #151515;
+            border-bottom: 1px solid #2a2a2a;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            color: #e0e0e0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #777;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .close-btn:hover {
+            color: #e0e0e0;
+        }
+
+        .modal-filters {
+            background-color: #0f0f0f;
+            border-bottom: 1px solid #2a2a2a;
+            padding: 15px 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filter-input {
+            flex: 1;
+            padding: 8px 12px;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            background-color: #0f0f0f;
+            border-top: 1px solid #2a2a2a;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .export-btn {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+        }
+
+        .export-btn:hover {
+            background-color: #444;
+        }
+
+        .vin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .vin-tag {
+            background-color: #252525;
+            border: 1px solid #333;
+            padding: 8px 10px;
+            font-size: 11px;
+            color: #e0e0e0;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .vin-tag:hover {
+            background-color: #2f2f2f;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #777;
+            padding: 40px;
+            font-size: 12px;
+        }
+
+        .results-count {
+            color: #777;
+            font-size: 11px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        /* Animation for spinning */
+        @keyframes spin {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
+
+        .spinning {
+            animation: spin 1s infinite linear;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Area -->
+    <div class="header-area">
+        <div class="header-left">
+            <h1>MSAS VPL Analyzer</h1>
+        </div>
+        <div class="header-buttons">
+            <button class="header-btn" onclick="openConfig()">Config</button>
+            <button class="header-btn" onclick="manualAnalysis()">Manuel Analiz</button>
+        </div>
+    </div>
+
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+        <div class="welcome-section">
+            <div class="welcome-text">Welcome,</div>
+            <div class="username" id="currentUser">Admin</div>
+        </div>
+        
+        <!-- Recent Dates Section -->
+        <div class="recent-dates-section">
+            <div class="section-header">📅 Son 4 Gün</div>
+            <div id="dateCards">
+                <!-- Dynamic date cards will be generated (only 4) -->
+            </div>
+        </div>
+
+        <!-- Custom Date Picker Section -->
+        <div class="custom-date-section">
+            <div class="section-header">🗓️ Özel Tarih Seç</div>
+            <div class="date-picker-container">
+                <label class="date-picker-label" for="customDate">Analiz Tarihi:</label>
+                <input type="date" id="customDate" class="date-input" max="">
+                <button class="load-date-btn" id="loadDateBtn" onclick="loadCustomDate()">
+                    📊 Analizi Yükle
+                </button>
+            </div>
+            
+            <!-- Selected Custom Date Display -->
+            <div class="selected-date-container" id="selectedDateContainer">
+                <div class="selected-date-label">Seçili Özel Tarih:</div>
+                <div class="selected-date-display" id="selectedDateDisplay" onclick="loadSelectedCustomDate()">
+                    <div class="selected-date-text" id="selectedDateText">15 Ocak 2024</div>
+                    <div class="selected-date-subtitle">Analiz için tıklayın</div>
+                    <button class="custom-reanalyze-btn" onclick="event.stopPropagation(); reanalyzeCustomDate()">↻</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <div class="content-title" id="analysisTitle">
+            Parça Değişiklikleri - Analiz Yükleniyor...
+        </div>
+        
+        <div class="changes-container" id="changesContainer">
+            <div class="loading">🔍 En son analiz verisi aranıyor...</div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="right-sidebar">
+        <div class="missing-parts-section">
+            <div class="section-title">
+                Eksik Required Parts
+            </div>
+            
+            <div id="missingPartsContainer">
+                <div class="loading">📊 Analiz verisi yükleniyor...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Detaylar</h3>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-filters">
+                <input type="text" class="filter-input" id="searchInput" placeholder="🔍 VIN ara (örn: ABC)...">
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content -->
+            </div>
+            <div class="modal-footer">
+                <div class="results-count" id="resultsCount">Toplam: 0 sonuç</div>
+                <button class="export-btn" onclick="exportModalData()">📥 CSV Export</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentAnalysisData = null;
+        let currentModalData = null;
+        let selectedCustomDate = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Dashboard initializing...');
+            
+            // Set max date for date picker to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('customDate').max = today;
+            
+            // Generate only 4 recent date cards
+            generateDateCards();
+            
+            // Auto-load latest available analysis
+            loadLatestAvailableAnalysis();
+            
+            // Set current user
+            document.getElementById('currentUser').textContent = 'Admin';
+            
+            // Setup modal event listeners
+            setupModalEventListeners();
+        });
+
+        // Generate only 4 recent date cards
+        function generateDateCards() {
+            const container = document.getElementById('dateCards');
+            const today = new Date();
+            
+            // Generate cards for last 4 days only
+            for (let i = 0; i < 4; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                
+                const dateStr = date.toISOString().split('T')[0];
+                const displayDate = formatDateTurkish(date);
+                
+                const previousDate = new Date(date);
+                previousDate.setDate(date.getDate() - 1);
+                const previousDisplayDate = formatDateTurkish(previousDate);
+                
+                const cardHTML = `
+                    <div class="date-card" data-date="${dateStr}" onclick="loadAnalysis('${dateStr}')">
+                        <div class="date-text">${displayDate}</div>
+                        <div class="date-details">vs ${previousDisplayDate}</div>
+                        <button class="reanalyze-btn" onclick="event.stopPropagation(); reanalyze('${dateStr}')">↻</button>
+                    </div>
+                `;
+                
+                container.innerHTML += cardHTML;
+            }
+        }
+
+        // Load custom date analysis
+        function loadCustomDate() {
+            const dateInput = document.getElementById('customDate');
+            const selectedDate = dateInput.value;
+            
+            if (!selectedDate) {
+                alert('Lütfen bir tarih seçin');
+                return;
+            }
+            
+            console.log('📅 Loading custom date:', selectedDate);
+            
+            // Disable button and show loading
+            const loadBtn = document.getElementById('loadDateBtn');
+            const originalText = loadBtn.textContent;
+            loadBtn.textContent = '🔍 Yükleniyor...';
+            loadBtn.disabled = true;
+            
+            // Store selected custom date
+            selectedCustomDate = selectedDate;
+            
+            // Show selected date display
+            updateSelectedDateDisplay(selectedDate);
+            
+            // Load analysis for selected date
+            loadAnalysisForDate(selectedDate, () => {
+                // Reset button
+                loadBtn.textContent = originalText;
+                loadBtn.disabled = false;
+            });
+        }
+
+        // Update selected date display
+        function updateSelectedDateDisplay(dateStr) {
+            const container = document.getElementById('selectedDateContainer');
+            const display = document.getElementById('selectedDateDisplay');
+            const textElement = document.getElementById('selectedDateText');
+            
+            const displayDate = formatDateTurkish(new Date(dateStr));
+            textElement.textContent = displayDate;
+            
+            // Show the container
+            container.classList.add('show');
+            
+            // Mark as active if this is the currently loaded analysis
+            display.classList.add('active');
+            
+            // Remove active from other date cards
+            document.querySelectorAll('.date-card').forEach(card => {
+                card.classList.remove('active');
+            });
+        }
+
+        // Load selected custom date
+        function loadSelectedCustomDate() {
+            if (selectedCustomDate) {
+                loadAnalysisForDate(selectedCustomDate);
+            }
+        }
+
+        // Reanalyze custom date
+        function reanalyzeCustomDate() {
+            if (selectedCustomDate) {
+                reanalyze(selectedCustomDate);
+            }
+        }
+
+        // Enhanced load analysis function
+        function loadAnalysisForDate(dateStr, callback) {
+            console.log('🔍 Loading analysis for date:', dateStr);
+            
+            // Update title
+            updateAnalysisTitle(dateStr);
+            
+            // Show loading state
+            const changesContainer = document.getElementById('changesContainer');
+            const missingContainer = document.getElementById('missingPartsContainer');
+            
+            changesContainer.innerHTML = '<div class="loading">Analiz verisi yükleniyor...</div>';
+            missingContainer.innerHTML = '<div class="loading">Eksik parts yükleniyor...</div>';
+            
+            // Clear active states
+            document.querySelectorAll('.date-card, .selected-date-display').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Fetch analysis data
+            const apiUrl = `/api/analysis/${dateStr}`;
+            console.log('📡 Fetching:', apiUrl);
+            
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.analysis) {
+                        currentAnalysisData = data.analysis;
+                        updateAnalysisDisplay(data.analysis);
+                        
+                        // Set active state for appropriate date display
+                        if (selectedCustomDate === dateStr) {
+                            document.getElementById('selectedDateDisplay').classList.add('active');
+                        } else {
+                            setActiveDateCard(dateStr);
+                        }
+                        
+                        console.log('✅ Analysis loaded successfully');
+                    } else {
+                        showErrorState('Bu tarih için analiz verisi bulunamadı: ' + dateStr);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Analysis load error:', error);
+                    showErrorState('Analiz verisi yüklenirken hata oluştu: ' + error.message);
+                })
+                .finally(() => {
+                    if (callback) callback();
+                });
+        }
+
+        // Original loadAnalysis function for date cards
+        function loadAnalysis(date) {
+            // Clear custom date selection if clicking on recent dates
+            if (selectedCustomDate && selectedCustomDate !== date) {
+                selectedCustomDate = null;
+                document.getElementById('selectedDateContainer').classList.remove('show');
+                document.getElementById('selectedDateDisplay').classList.remove('active');
+            }
+            
+            loadAnalysisForDate(date);
+        }
+
+        // Load latest available analysis automatically
+        function loadLatestAvailableAnalysis() {
+            console.log('🔍 Searching for latest available analysis...');
+            
+            // Show searching state
+            const changesContainer = document.getElementById('changesContainer');
+            const missingContainer = document.getElementById('missingPartsContainer');
+            
+            changesContainer.innerHTML = '<div class="loading">🔍 En son analiz verisi aranıyor...</div>';
+            missingContainer.innerHTML = '<div class="loading">📊 Analiz verisi yükleniyor...</div>';
+            
+            // Try to find analysis starting from today, going back 7 days
+            tryLoadAnalysisFromDate(0);
+        }
+
+        // Try to load analysis from X days ago
+        function tryLoadAnalysisFromDate(daysBack) {
+            if (daysBack >= 7) {
+                showNoAnalysisFoundState();
+                return;
+            }
+            
+            const today = new Date();
+            const tryDate = new Date(today);
+            tryDate.setDate(today.getDate() - daysBack);
+            const dateStr = tryDate.toISOString().split('T')[0];
+            
+            console.log(`📅 Trying to load analysis for: ${dateStr} (${daysBack} days back)`);
+            
+            const apiUrl = `/api/analysis/${dateStr}`;
+            
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.analysis) {
+                        console.log('✅ Found analysis for date:', dateStr);
+                        currentAnalysisData = data.analysis;
+                        updateAnalysisDisplay(data.analysis);
+                        setActiveDateCard(dateStr);
+                        updateAnalysisTitle(dateStr);
+                    } else {
+                        console.log(`❌ No analysis for ${dateStr}, trying next...`);
+                        setTimeout(() => tryLoadAnalysisFromDate(daysBack + 1), 200);
+                    }
+                })
+                .catch(error => {
+                    console.log(`❌ Error loading ${dateStr}:`, error.message);
+                    setTimeout(() => tryLoadAnalysisFromDate(daysBack + 1), 200);
+                });
+        }
+
+        // Set active date card
+        function setActiveDateCard(dateStr) {
+            document.querySelectorAll('.date-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            // Find matching date card
+            document.querySelectorAll('.date-card').forEach(card => {
+                const cardDate = card.getAttribute('data-date');
+                if (cardDate === dateStr) {
+                    card.classList.add('active');
+                }
+            });
+        }
+
+        // Update analysis title with date
+        function updateAnalysisTitle(dateStr) {
+            const displayDate = formatDateTurkish(new Date(dateStr));
+            document.getElementById('analysisTitle').textContent = `Parça Değişiklikleri - ${displayDate}`;
+        }
+
+        // Show no analysis found state
+        function showNoAnalysisFoundState() {
+            const changesContainer = document.getElementById('changesContainer');
+            const missingContainer = document.getElementById('missingPartsContainer');
+            
+            changesContainer.innerHTML = `
+                <div class="empty-state">
+                    <h3>📁 Henüz analiz verisi yok</h3>
+                    <p>Son 7 gün içinde hiçbir VPL analizi bulunamadı.<br>
+                    VPL dosyalarını 'vpl_files' klasörüne yerleştirin ve 'Manuel Analiz' butonuna tıklayın.</p>
+                </div>
+            `;
+            
+            missingContainer.innerHTML = `
+                <div class="empty-state">
+                    <h3>⚠️ Veri Bulunamadı</h3>
+                    <p>Analiz edilmiş veri bulunmuyor</p>
+                </div>
+            `;
+            
+            document.getElementById('analysisTitle').textContent = 'Henüz Analiz Verisi Bulunmuyor';
+        }
+
+        // Setup modal event listeners
+        function setupModalEventListeners() {
+            document.getElementById('detailModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+        }
+
+        // Update analysis display with real data
+        function updateAnalysisDisplay(analysisData) {
+            updatePartChanges(analysisData.part_changes || []);
+            updateMissingParts(analysisData.missing_required_file2 || []);
+        }
+
+        // Update part changes section
+        function updatePartChanges(partChanges) {
+            const container = document.getElementById('changesContainer');
+            
+            if (!partChanges || partChanges.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>🎉 Hiçbir parça değişikliği bulunamadı</h3>
+                        <p>Bu tarih aralığında herhangi bir parça değişikliği tespit edilmedi.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const changesHtml = partChanges.map((change, index) => {
+                const changeClass = getChangeClass(change.change_type);
+                const partDisplay = getPartDisplay(change);
+                
+                return `
+                    <div class="change-item ${changeClass}">
+                        <div class="change-header">
+                            <div class="change-info">
+                                ${partDisplay}
+                                <span class="change-type">${change.change_type}</span>
+                                <span class="affected-count">${change.affected_count} VIN etkilendi</span>
+                            </div>
+                            <button class="details-btn" onclick="openPartChangesModal(${index}); event.stopPropagation();">
+                                Detayları Gör
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = changesHtml;
+        }
+
+        // Update missing parts section
+        function updateMissingParts(missingParts) {
+            const container = document.getElementById('missingPartsContainer');
+            
+            if (!missingParts || missingParts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>✅ Tüm required parts mevcut</h3>
+                        <p>Hiçbir required part eksik bulunmadı.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const missingHtml = missingParts.map((missing, index) => `
+                <div class="missing-item">
+                    <div class="missing-header">
+                        <div class="missing-info">
+                            <div class="missing-part">${missing.required_base}</div>
+                            <div class="missing-count">${missing.missing_count} VIN'de bulunamadı</div>
+                        </div>
+                        <button class="missing-details-btn" onclick="openMissingPartsModal(${index}); event.stopPropagation();">
+                            Detayları Gör
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = missingHtml;
+        }
+
+        // Open Part Changes Modal
+        function openPartChangesModal(changeIndex) {
+            if (!currentAnalysisData || !currentAnalysisData.part_changes) return;
+            
+            const change = currentAnalysisData.part_changes[changeIndex];
+            const modal = document.getElementById('detailModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const searchInput = document.getElementById('searchInput');
+            
+            let titleText = '';
+            if (change.change_type === 'PART_ADDED') {
+                titleText = `Eklenen: ${change.new_part_name} (${change.affected_count} VIN)`;
+            } else if (change.change_type === 'PART_REMOVED') {
+                titleText = `Kaldırılan: ${change.old_part_name} (${change.affected_count} VIN)`;
+            } else {
+                titleText = `${change.old_part_name} → ${change.new_part_name} (${change.affected_count} VIN)`;
+            }
+            modalTitle.textContent = titleText;
+            
+            currentModalData = {
+                type: 'partChanges',
+                data: change.affected_vins || []
+            };
+            
+            searchInput.value = '';
+            searchInput.placeholder = '🔍 VIN ara (örn: ABC)...';
+            renderModalContent(currentModalData.data);
+            
+            searchInput.oninput = () => filterModalContent(searchInput.value);
+            modal.classList.add('show');
+        }
+
+        // Open Missing Parts Modal
+        function openMissingPartsModal(missingIndex) {
+            if (!currentAnalysisData || !currentAnalysisData.missing_required_file2) return;
+            
+            const missing = currentAnalysisData.missing_required_file2[missingIndex];
+            const modal = document.getElementById('detailModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const searchInput = document.getElementById('searchInput');
+            
+            modalTitle.textContent = `Eksik Part: ${missing.required_base} (${missing.missing_count} VIN)`;
+            
+            currentModalData = {
+                type: 'missingParts',
+                data: missing.missing_vins || []
+            };
+            
+            searchInput.value = '';
+            searchInput.placeholder = '🔍 VIN ara (örn: ABC)...';
+            renderModalContent(currentModalData.data);
+            
+            searchInput.oninput = () => filterModalContent(searchInput.value);
+            modal.classList.add('show');
+        }
+
+        // Render modal content
+        function renderModalContent(vins) {
+            const modalBody = document.getElementById('modalBody');
+            const resultsCount = document.getElementById('resultsCount');
+            
+            if (!vins || vins.length === 0) {
+                modalBody.innerHTML = '<div class="no-results">Sonuç bulunamadı</div>';
+                resultsCount.textContent = 'Toplam: 0 sonuç';
+                return;
+            }
+            
+            resultsCount.textContent = `Toplam: ${vins.length} sonuç`;
+            
+            const vinsHtml = vins.map(vin => `
+                <div class="vin-tag">${vin}</div>
+            `).join('');
+            
+            modalBody.innerHTML = `<div class="vin-grid">${vinsHtml}</div>`;
+        }
+
+        // Filter modal content
+        function filterModalContent(searchTerm) {
+            if (!currentModalData) return;
+            
+            const originalData = currentModalData.data;
+            
+            if (!searchTerm.trim()) {
+                renderModalContent(originalData);
+                return;
+            }
+            
+            const filteredVins = originalData.filter(vin => 
+                vin.toLowerCase().startsWith(searchTerm.toLowerCase())
+            );
+            
+            renderModalContent(filteredVins);
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('show');
+            currentModalData = null;
+        }
+
+        // Export modal data
+        function exportModalData() {
+            if (!currentModalData) return;
+            
+            const data = currentModalData.data;
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput.value.trim();
+            
+            let exportData = data;
+            if (searchTerm) {
+                exportData = data.filter(vin => 
+                    vin.toLowerCase().startsWith(searchTerm.toLowerCase())
+                );
+            }
+            
+            if (exportData.length === 0) {
+                alert('Export edilecek veri bulunamadı');
+                return;
+            }
+            
+            const csvContent = 'VIN\n' + exportData.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `vins_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Get CSS class for change type
+        function getChangeClass(changeType) {
+            if (changeType === 'PART_ADDED') return 'added';
+            if (changeType === 'PART_REMOVED') return 'removed';
+            return 'modified';
+        }
+
+        // Get part display HTML
+        function getPartDisplay(change) {
+            if (change.change_type === 'PART_ADDED') {
+                return `
+                    <div class="part-transition">
+                        <span class="new-part">${change.new_part_name}</span>
+                    </div>
+                `;
+            } else if (change.change_type === 'PART_REMOVED') {
+                return `
+                    <div class="part-transition">
+                        <span class="old-part">${change.old_part_name}</span>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="part-transition">
+                        <span class="old-part">${change.old_part_name}</span>
+                        <span class="arrow">→</span>
+                        <span class="new-part">${change.new_part_name}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Show error state
+        function showErrorState(message) {
+            const changesContainer = document.getElementById('changesContainer');
+            const missingContainer = document.getElementById('missingPartsContainer');
+            
+            changesContainer.innerHTML = `
+                <div class="empty-state">
+                    <h3>⚠️ Veri Yüklenemedi</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+            
+            missingContainer.innerHTML = `
+                <div class="empty-state">
+                    <h3>⚠️ Veri Yüklenemedi</h3>
+                    <p>Missing parts verisi yüklenemedi</p>
+                </div>
+            `;
+        }
+
+        // Reanalyze specific date
+        function reanalyze(date) {
+            const button = event.target;
+            const originalText = button.textContent;
+            
+            button.textContent = '⟳';
+            button.classList.add('spinning');
+            
+            fetch('/api/reanalyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: date })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadAnalysisForDate(date);
+                } else {
+                    alert('Yeniden analiz başarısız: ' + (data.message || 'Bilinmeyen hata'));
+                }
+            })
+            .catch(error => {
+                console.error('Reanalyze error:', error);
+                alert('Yeniden analiz sırasında bir hata oluştu');
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.classList.remove('spinning');
+            });
+        }
+
+        // Open config page
+        function openConfig() {
+            window.location.href = '/config';
+        }
+
+        // Trigger manual analysis
+        function manualAnalysis() {
+            const button = event.target;
+            const originalText = button.textContent;
+            
+            event.preventDefault();
+            console.log('🔨 Manual analysis triggered');
+            
+            button.textContent = 'Analiz Ediliyor...';
+            button.disabled = true;
+            
+            fetch('/api/vpl/analyze', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => {
+                console.log('📥 Manual analysis response:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('📊 Manual analysis result:', data);
+                if (data.success) {
+                    console.log('✅ Manual analysis completed');
+                    const today = new Date().toISOString().split('T')[0];
+                    setTimeout(() => {
+                        loadAnalysisForDate(today);
+                    }, 1000);
+                } else {
+                    console.error('❌ Manual analysis failed:', data.message);
+                    alert('Manuel analiz başarısız: ' + (data.message || 'Bilinmeyen hata'));
+                }
+            })
+            .catch(error => {
+                console.error('❌ Manual analysis error:', error);
+                alert('Manuel analiz sırasında bir hata oluştu: ' + error.message);
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+
+        // Format date in Turkish
+        function formatDateTurkish(date) {
+            const months = [
+                'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+            ];
+            
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `${day} ${month} ${year}`;
+        }
+    </script>
+</body>
+</html>

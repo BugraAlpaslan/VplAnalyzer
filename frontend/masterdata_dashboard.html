@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSAS Masterdata Analyzer - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Fira Code', monospace;
+            font-weight: 500;
+            background-color: #0a0a0a;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 2fr 2fr 1fr;
+            grid-template-rows: 80px 1fr;
+            gap: 1px;
+            padding: 0;
+        }
+
+        /* Header Area */
+        .header-area {
+            grid-column: 1 / 5;
+            background-color: #151515;
+            border-bottom: 1px solid #1f1f1f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: #e0e0e0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-left h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .system-indicator {
+            background-color: #fb923c;
+            color: #0a0a0a;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 2px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            border: 1px solid #2a2a2a;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .header-btn:hover {
+            background-color: #2a2a2a;
+        }
+
+        .header-btn.back {
+            background-color: #2a2a2a;
+            border-color: #444;
+        }
+
+        /* Left Sidebar */
+        .sidebar {
+            grid-column: 1 / 2;
+            background-color: #111111;
+            border-right: 1px solid #1f1f1f;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .welcome-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #1f1f1f;
+        }
+
+        .welcome-text {
+            color: #777;
+            font-size: 12px;
+        }
+
+        .username {
+            color: #e0e0e0;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .date-card {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .date-card:hover {
+            background-color: #252525;
+        }
+
+        .date-card.active {
+            background-color: #0a0a0a;
+            border-color: #fb923c;
+            box-shadow: 0 0 10px rgba(251, 146, 60, 0.3);
+        }
+
+        .date-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .date-details {
+            font-size: 10px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        .reanalyze-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: transparent;
+            border: none;
+            color: #777;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .reanalyze-btn:hover {
+            color: #fb923c;
+        }
+
+        /* Main Content Areas */
+        .tei-content {
+            grid-column: 2 / 3;
+            background-color: #131313;
+            border-right: 1px solid #1f1f1f;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .osl-content {
+            grid-column: 3 / 4;
+            background-color: #131313;
+            border-right: 1px solid #1f1f1f;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .content-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #1f1f1f;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .content-title .icon {
+            font-size: 14px;
+        }
+
+        .tei-content .content-title .icon {
+            color: #4ade80;
+        }
+
+        .osl-content .content-title .icon {
+            color: #fb923c;
+        }
+
+        /* Statistics Cards */
+        .stats-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #777;
+        }
+
+        .stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .stat-value.success {
+            color: #4ade80;
+        }
+
+        .stat-value.warning {
+            color: #fb923c;
+        }
+
+        .stat-value.error {
+            color: #f87171;
+        }
+
+        /* Results Container */
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-item {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 15px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .result-item:hover {
+            background-color: #252525;
+        }
+
+        .result-item.success {
+            border-left: 3px solid #4ade80;
+        }
+
+        .result-item.warning {
+            border-left: 3px solid #fb923c;
+        }
+
+        .result-item.error {
+            border-left: 3px solid #f87171;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .result-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .result-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .result-description {
+            font-size: 10px;
+            color: #777;
+        }
+
+        .result-count {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 2px;
+        }
+
+        .details-btn {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 6px 12px;
+            font-size: 10px;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .details-btn:hover {
+            background-color: #444;
+        }
+
+        /* Right Sidebar */
+        .right-sidebar {
+            grid-column: 4 / 5;
+            background-color: #111111;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .compliance-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fb923c;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #1f1f1f;
+            padding-bottom: 8px;
+        }
+
+        .compliance-overview {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .compliance-score {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .score-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#4ade80 0deg, #4ade80 0deg, #2a2a2a 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            position: relative;
+        }
+
+        .score-circle::before {
+            content: '';
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #1a1a1a;
+            position: absolute;
+        }
+
+        .score-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e0e0e0;
+            z-index: 1;
+        }
+
+        .score-label {
+            font-size: 10px;
+            color: #777;
+            text-align: center;
+        }
+
+        .compliance-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .breakdown-label {
+            font-size: 10px;
+            color: #777;
+        }
+
+        .breakdown-value {
+            font-size: 10px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .breakdown-value.success {
+            color: #4ade80;
+        }
+
+        .breakdown-value.warning {
+            color: #fb923c;
+        }
+
+        .breakdown-value.error {
+            color: #f87171;
+        }
+
+        /* CK Module Section */
+        .ck-module-section {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .ck-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #fb923c;
+            margin-bottom: 10px;
+        }
+
+        .ck-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .ck-stat {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+        }
+
+        .ck-stat-label {
+            color: #777;
+        }
+
+        .ck-stat-value {
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+
+        /* Loading States */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #777;
+        }
+
+        .empty-state h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #999;
+        }
+
+        .empty-state p {
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            width: 90%;
+            max-width: 1200px;
+            height: 80%;
+            max-height: 800px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            background-color: #151515;
+            border-bottom: 1px solid #2a2a2a;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            color: #e0e0e0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #777;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .close-btn:hover {
+            color: #e0e0e0;
+        }
+
+        .modal-filters {
+            background-color: #0f0f0f;
+            border-bottom: 1px solid #2a2a2a;
+            padding: 15px 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filter-input {
+            flex: 1;
+            padding: 8px 12px;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            background-color: #0f0f0f;
+            border-top: 1px solid #2a2a2a;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .export-btn {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+        }
+
+        .export-btn:hover {
+            background-color: #444;
+        }
+
+        /* Modal Content Items */
+        .modal-item {
+            background-color: #252525;
+            border: 1px solid #2a2a2a;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .modal-item-header {
+            color: #e0e0e0;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .modal-item-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            font-size: 11px;
+        }
+
+        .modal-item-field {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .field-label {
+            color: #777;
+        }
+
+        .field-value {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+
+        .field-value.success {
+            color: #4ade80;
+        }
+
+        .field-value.error {
+            color: #f87171;
+        }
+
+        .field-value.warning {
+            color: #fb923c;
+        }
+
+        .violations-list {
+            margin-top: 10px;
+        }
+
+        .violation-item {
+            background-color: #1a1a1a;
+            border-left: 3px solid #f87171;
+            padding: 8px;
+            margin-bottom: 4px;
+            font-size: 10px;
+            color: #f87171;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-item {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            body {
+                grid-template-columns: 250px 1fr 1fr 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                grid-template-columns: 1fr;
+                grid-template-rows: 80px auto auto auto;
+            }
+            
+            .sidebar {
+                grid-column: 1;
+                grid-row: 2;
+                border-right: none;
+                border-bottom: 1px solid #1f1f1f;
+            }
+            
+            .tei-content {
+                grid-column: 1;
+                grid-row: 3;
+                border-right: none;
+                border-bottom: 1px solid #1f1f1f;
+            }
+            
+            .osl-content {
+                grid-column: 1;
+                grid-row: 4;
+                border-right: none;
+                border-bottom: 1px solid #1f1f1f;
+            }
+            
+            .right-sidebar {
+                grid-column: 1;
+                grid-row: 5;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Area -->
+    <div class="header-area">
+        <div class="header-left">
+            <h1>MSAS Masterdata Analyzer</h1>
+            <span class="system-indicator">MASTERDATA</span>
+        </div>
+        <div class="header-buttons">
+            <button class="header-btn back" onclick="goBack()">← Dashboard Seçimi</button>
+            <button class="header-btn" onclick="openConfig()">Config</button>
+            <button class="header-btn" onclick="manualAnalysis()">Manuel Analiz</button>
+        </div>
+    </div>
+
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+        <div class="welcome-section">
+            <div class="welcome-text">Masterdata Analizi</div>
+            <div class="username" id="currentUser">Admin</div>
+        </div>
+        
+        <div id="dateCards">
+            <!-- Dynamic date cards will be generated -->
+        </div>
+    </div>
+
+    <!-- TEI Analysis Content -->
+    <div class="tei-content">
+        <div class="content-title">
+            <span class="icon">📄</span>
+            <span id="teiTitle">TEI Analizi - 16 Aralık 2024</span>
+        </div>
+        
+        <div class="stats-container" id="teiStats">
+            <!-- TEI statistics will be loaded here -->
+            <div class="loading">TEI istatistikleri yükleniyor...</div>
+        </div>
+        
+        <div class="results-container" id="teiResults">
+            <!-- TEI results will be loaded here -->
+            <div class="loading">TEI analiz sonuçları yükleniyor...</div>
+        </div>
+    </div>
+
+    <!-- OSL Analysis Content -->
+    <div class="osl-content">
+        <div class="content-title">
+            <span class="icon">⚙️</span>
+            <span id="oslTitle">OSL Analizi - 16 Aralık 2024</span>
+        </div>
+        
+        <div class="stats-container" id="oslStats">
+            <!-- OSL statistics will be loaded here -->
+            <div class="loading">OSL istatistikleri yükleniyor...</div>
+        </div>
+        
+        <div class="results-container" id="oslResults">
+            <!-- OSL results will be loaded here -->
+            <div class="loading">OSL analiz sonuçları yükleniyor...</div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="right-sidebar">
+        <div class="compliance-section">
+            <div class="section-title">📊 Uyumluluk Skoru</div>
+            
+            <div class="compliance-overview">
+                <div class="compliance-score">
+                    <div class="score-circle" id="scoreCircle">
+                        <span class="score-text" id="scoreText">--%</span>
+                    </div>
+                    <div class="score-label">Genel Uyumluluk</div>
+                </div>
+                
+                <div class="compliance-breakdown" id="complianceBreakdown">
+                    <!-- Compliance breakdown will be loaded here -->
+                </div>
+            </div>
+            
+            <div class="ck-module-section">
+                <div class="ck-title">🔧 CK Modülü Durumu</div>
+                <div class="ck-stats" id="ckStats">
+                    <!-- CK module stats will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Detaylar</h3>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-filters">
+                <input type="text" class="filter-input" id="searchInput" placeholder="🔍 İçerik ara...">
+                <select class="filter-select" id="filterSelect" onchange="applyFilter()">
+                    <option value="all">Tüm Sonuçlar</option>
+                    <option value="violations">Sadece Violation'lar</option>
+                    <option value="compliant">Sadece Uyumlu</option>
+                </select>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content -->
+            </div>
+            <div class="modal-footer">
+                <div id="resultsCount">Toplam: 0 sonuç</div>
+                <button class="export-btn" onclick="exportModalData()">📥 CSV Export</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentAnalysisData = null;
+        let currentModalData = null;
+
+        // Load masterdata analysis for specific date
+        function loadMasterdataAnalysis(date) {
+            console.log('🔍 Loading masterdata analysis for date:', date);
+            
+            // Update active date card
+            document.querySelectorAll('.date-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            if (event) {
+                event.target.closest('.date-card').classList.add('active');
+            }
+            
+            // Update titles
+            const formattedDate = formatDateTurkish(new Date(date));
+            document.getElementById('teiTitle').textContent = `TEI Analizi - ${formattedDate}`;
+            document.getElementById('oslTitle').textContent = `OSL Analizi - ${formattedDate}`;
+            
+            // Show loading state
+            showLoadingState();
+            
+            // Fetch analysis data from backend
+            const apiUrl = `/api/masterdata/analysis/${date}`;
+            console.log('📡 Fetching:', apiUrl);
+            
+            fetch(apiUrl)
+                .then(response => {
+                    console.log('📥 Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('📊 Response data:', data);
+                    
+                    if (data.success) {
+                        currentAnalysisData = data.analysis;
+                        updateMasterdataDisplay(data.analysis);
+                        console.log('✅ Masterdata analysis loaded successfully');
+                    } else {
+                        console.warn('⚠️ Analysis failed:', data.message);
+                        showErrorState('Analiz verisi yüklenemedi: ' + (data.message || 'Bilinmeyen hata'));
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Analysis load error:', error);
+                    showErrorState('Analiz verisi yüklenirken bir hata oluştu: ' + error.message);
+                });
+        }
+
+        // Update masterdata display with real data
+        function updateMasterdataDisplay(analysisData) {
+            updateTEIAnalysis(analysisData.tei_analysis_results);
+            updateOSLAnalysis(analysisData.osl_analysis_results);
+            updateComplianceOverview(analysisData);
+        }
+
+        // Update TEI analysis section
+        function updateTEIAnalysis(teiResults) {
+            // Update TEI statistics
+            const teiStatsHtml = `
+                <div class="stat-card">
+                    <span class="stat-label">VPL Parçaları</span>
+                    <span class="stat-value">${teiResults.statistics.total_vpl_parts}</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">TEI'de Bulunan</span>
+                    <span class="stat-value success">${teiResults.statistics.found_in_tei} (${teiResults.statistics.tei_match_rate.toFixed(1)}%)</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Inner Ref Doğruluğu</span>
+                    <span class="stat-value ${teiResults.statistics.inner_ref_accuracy > 90 ? 'success' : 'warning'}">${teiResults.statistics.inner_ref_accuracy.toFixed(1)}%</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Açıklama Kapsamı</span>
+                    <span class="stat-value ${teiResults.statistics.description_coverage > 90 ? 'success' : 'warning'}">${teiResults.statistics.description_coverage.toFixed(1)}%</span>
+                </div>
+            `;
+            document.getElementById('teiStats').innerHTML = teiStatsHtml;
+
+            // Update TEI results
+            let teiResultsHtml = '';
+            
+            // TEI Match Results
+            if (teiResults.found_in_tei.length > 0) {
+                teiResultsHtml += `
+                    <div class="result-item success" onclick="openTEIModal('found')">
+                        <div class="result-header">
+                            <div class="result-info">
+                                <div class="result-title">TEI'de Bulunan Parçalar</div>
+                                <div class="result-count">${teiResults.found_in_tei.length}</div>
+                            </div>
+                            <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('found');">Detayları Gör</button>
+                        </div>
+                        <div class="result-description">Başarılı TEI eşleşmeleri ve inner reference kontrolü</div>
+                    </div>
+                `;
+            }
+
+            // TEI Not Found
+            if (teiResults.not_found_in_tei.length > 0) {
+                teiResultsHtml += `
+                    <div class="result-item error" onclick="openTEIModal('not_found')">
+                        <div class="result-header">
+                            <div class="result-info">
+                                <div class="result-title">TEI'de Bulunamayan Parçalar</div>
+                                <div class="result-count">${teiResults.not_found_in_tei.length}</div>
+                            </div>
+                            <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('not_found');">Detayları Gör</button>
+                        </div>
+                        <div class="result-description">TEI dosyasında karşılığı bulunmayan VPL parçaları</div>
+                    </div>
+                `;
+            }
+
+            // Inner Reference Errors
+            if (teiResults.inner_reference_incorrect.length > 0) {
+                teiResultsHtml += `
+                    <div class="result-item warning" onclick="openTEIModal('inner_ref_errors')">
+                        <div class="result-header">
+                            <div class="result-info">
+                                <div class="result-title">Inner Reference Hataları</div>
+                                <div class="result-count">${teiResults.inner_reference_incorrect.length}</div>
+                            </div>
+                            <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('inner_ref_errors');">Detayları Gör</button>
+                        </div>
+                        <div class="result-description">Yanlış inner reference formatına sahip parçalar</div>
+                    </div>
+                `;
+            }
+
+            // Missing Descriptions
+            if (teiResults.missing_description.length > 0) {
+                teiResultsHtml += `
+                    <div class="result-item warning" onclick="openTEIModal('missing_desc')">
+                        <div class="result-header">
+                            <div class="result-info">
+                                <div class="result-title">Eksik Açıklamalar</div>
+                                <div class="result-count">${teiResults.missing_description.length}</div>
+                            </div>
+                            <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('missing_desc');">Detayları Gör</button>
+                        </div>
+                        <div class="result-description">Açıklama bilgisi eksik olan parçalar</div>
+                    </div>
+                `;
+            }
+
+            if (teiResultsHtml === '') {
+                teiResultsHtml = `
+                    <div class="empty-state">
+                        <h3>📄 TEI analizi tamamlandı</h3>
+                        <p>Tüm kontroller başarılı, herhangi bir sorun bulunamadı.</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('teiResults').innerHTML = teiResultsHtml;
+        }
+
+        // Update OSL analysis section  
+        function updateOSLAnalysis(oslResults) {
+            // Update OSL statistics
+            const oslStatsHtml = `
+                <div class="stat-card">
+                    <span class="stat-label">Inner Reference</span>
+                    <span class="stat-value">${oslResults.statistics.total_inner_references}</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">OSL'de Bulunan</span>
+                    <span class="stat-value success">${oslResults.statistics.found_in_osl} (${oslResults.statistics.osl_match_rate.toFixed(1)}%)</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Parametre Tamamlama</span>
+                    <span class="stat-value ${oslResults.statistics.parameter_completeness > 80 ? 'success' : 'warning'}">${oslResults.statistics.parameter_completeness.toFixed(1)}%</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">CK Modülü Uyumluluğu</span>
+                    <span class="stat-value ${oslResults.statistics.ck_compliance_rate > 80 ? 'success' : 'error'}">${oslResults.statistics.ck_compliance_rate.toFixed(1)}%</span>
+                </div>
+            `;
+            document.getElementById('oslStats').innerHTML = oslStatsHtml;
+
+            // Update OSL results based on validation results
+            let oslResultsHtml = '';
+            
+            if (oslResults.validation_results) {
+                const validationStats = oslResults.validation_statistics;
+                
+                // Overall compliance
+                oslResultsHtml += `
+                    <div class="result-item ${validationStats.overall_compliance_rate > 80 ? 'success' : 'warning'}" onclick="openOSLModal('all_validation')">
+                        <div class="result-header">
+                            <div class="result-info">
+                                <div class="result-title">Genel Uyumluluk</div>
+                                <div class="result-count">${validationStats.fully_compliant_parts}/${validationStats.total_parts}</div>
+                            </div>
+                            <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('all_validation');">Detayları Gör</button>
+                        </div>
+                        <div class="result-description">Tüm validation kurallarına uygun parçalar (${validationStats.overall_compliance_rate.toFixed(1)}%)</div>
+                    </div>
+                `;
+
+                // Required parameter violations
+                if (validationStats.required_param_violations > 0) {
+                    oslResultsHtml += `
+                        <div class="result-item error" onclick="openOSLModal('required_violations')">
+                            <div class="result-header">
+                                <div class="result-info">
+                                    <div class="result-title">Required Parametre Eksikleri</div>
+                                    <div class="result-count">${validationStats.required_param_violations}</div>
+                                </div>
+                                <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('required_violations');">Detayları Gör</button>
+                            </div>
+                            <div class="result-description">MODULE veya PART_FAMILY eksik olan parçalar</div>
+                        </div>
+                    `;
+                }
+
+                // Project parameter violations
+                if (validationStats.project_param_violations > 0) {
+                    oslResultsHtml += `
+                        <div class="result-item warning" onclick="openOSLModal('project_violations')">
+                            <div class="result-header">
+                                <div class="result-info">
+                                    <div class="result-title">PROJECT Parametre Eksikleri</div>
+                                    <div class="result-count">${validationStats.project_param_violations}</div>
+                                </div>
+                                <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('project_violations');">Detayları Gör</button>
+                            </div>
+                            <div class="result-description">PROJECT veya PROJECT1 eksik olan parçalar</div>
+                        </div>
+                    `;
+                }
+
+                // CK module violations
+                if (validationStats.ck_module_violations > 0) {
+                    oslResultsHtml += `
+                        <div class="result-item error" onclick="openOSLModal('ck_violations')">
+                            <div class="result-header">
+                                <div class="result-info">
+                                    <div class="result-title">CK Modülü Violation'ları</div>
+                                    <div class="result-count">${validationStats.ck_module_violations}</div>
+                                </div>
+                                <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('ck_violations');">Detayları Gör</button>
+                            </div>
+                            <div class="result-description">CK modülü için LABEL_POSITION/LABEL_TYPE eksik</div>
+                        </div>
+                    `;
+                }
+            }
+
+            if (oslResultsHtml === '') {
+                oslResultsHtml = `
+                    <div class="empty-state">
+                        <h3>⚙️ OSL analizi tamamlandı</h3>
+                        <p>Tüm validation kuralları başarılı, violation bulunamadı.</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('oslResults').innerHTML = oslResultsHtml;
+        }
+
+        // Update compliance overview
+        function updateComplianceOverview(analysisData) {
+            if (analysisData.osl_analysis_results.validation_statistics) {
+                const stats = analysisData.osl_analysis_results.validation_statistics;
+                const score = stats.overall_compliance_rate;
+                
+                // Update score circle
+                updateScoreCircle(score);
+                document.getElementById('scoreText').textContent = `${score.toFixed(0)}%`;
+                
+                // Update breakdown
+                const breakdownHtml = `
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">Required Parametreler</span>
+                        <span class="breakdown-value ${stats.required_param_compliance_rate > 90 ? 'success' : 'error'}">${stats.required_param_compliance_rate.toFixed(1)}%</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">PROJECT Parametreleri</span>
+                        <span class="breakdown-value ${stats.project_compliance_rate > 90 ? 'success' : 'warning'}">${stats.project_compliance_rate.toFixed(1)}%</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">CK Modül Uyumluluğu</span>
+                        <span class="breakdown-value ${stats.ck_compliance_rate > 80 ? 'success' : 'error'}">${stats.ck_compliance_rate.toFixed(1)}%</span>
+                    </div>
+                `;
+                document.getElementById('complianceBreakdown').innerHTML = breakdownHtml;
+                
+                // Update CK stats
+                const ckStatsHtml = `
+                    <div class="ck-stat">
+                        <span class="ck-stat-label">CK Modülü Parça:</span>
+                        <span class="ck-stat-value">${stats.ck_module_parts}</span>
+                    </div>
+                    <div class="ck-stat">
+                        <span class="ck-stat-label">CK Violation:</span>
+                        <span class="ck-stat-value">${stats.ck_module_violations}</span>
+                    </div>
+                    <div class="ck-stat">
+                        <span class="ck-stat-label">CK Uyumluluk:</span>
+                        <span class="ck-stat-value">${stats.ck_compliance_rate.toFixed(1)}%</span>
+                    </div>
+                `;
+                document.getElementById('ckStats').innerHTML = ckStatsHtml;
+            }
+        }
+
+        // Update score circle visual
+        function updateScoreCircle(score) {
+            const circle = document.getElementById('scoreCircle');
+            const degrees = (score / 100) * 360;
+            let color = '#f87171'; // Error red
+            
+            if (score > 80) color = '#4ade80'; // Success green
+            else if (score > 60) color = '#fb923c'; // Warning orange
+            
+            circle.style.background = `conic-gradient(${color} 0deg, ${color} ${degrees}deg, #2a2a2a ${degrees}deg)`;
+        }
+
+        // Modal functions for TEI results
+        function openTEIModal(type) {
+            if (!currentAnalysisData) return;
+            
+            const modal = document.getElementById('detailModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const searchInput = document.getElementById('searchInput');
+            
+            let titleText = '';
+            let data = [];
+            
+            const teiResults = currentAnalysisData.tei_analysis_results;
+            
+            switch (type) {
+                case 'found':
+                    titleText = `TEI'de Bulunan Parçalar (${teiResults.found_in_tei.length})`;
+                    data = teiResults.found_in_tei;
+                    break;
+                case 'not_found':
+                    titleText = `TEI'de Bulunamayan Parçalar (${teiResults.not_found_in_tei.length})`;
+                    data = teiResults.not_found_in_tei.map(part => ({ vpl_part_reference: part }));
+                    break;
+                case 'inner_ref_errors':
+                    titleText = `Inner Reference Hataları (${teiResults.inner_reference_incorrect.length})`;
+                    data = teiResults.inner_reference_incorrect;
+                    break;
+                case 'missing_desc':
+                    titleText = `Eksik Açıklamalar (${teiResults.missing_description.length})`;
+                    data = teiResults.missing_description;
+                    break;
+            }
+            
+            modalTitle.textContent = titleText;
+            searchInput.value = '';
+            searchInput.placeholder = '🔍 Part referansı ara...';
+            
+            currentModalData = { type: 'tei', subtype: type, data: data };
+            renderTEIModalContent(data);
+            
+            searchInput.oninput = () => filterTEIModalContent(searchInput.value);
+            modal.classList.add('show');
+        }
+
+        // Modal functions for OSL results
+        function openOSLModal(type) {
+            if (!currentAnalysisData) return;
+            
+            const modal = document.getElementById('detailModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const searchInput = document.getElementById('searchInput');
+            
+            let titleText = '';
+            let data = [];
+            
+            const oslResults = currentAnalysisData.osl_analysis_results;
+            
+            if (oslResults.validation_results) {
+                switch (type) {
+                    case 'all_validation':
+                        titleText = `Tüm Validation Sonuçları (${oslResults.validation_results.length})`;
+                        data = oslResults.validation_results;
+                        break;
+                    case 'required_violations':
+                        titleText = `Required Parametre Violation'ları`;
+                        data = oslResults.validation_results.filter(r => !r.required_compliance.is_compliant);
+                        break;
+                    case 'project_violations':
+                        titleText = `PROJECT Parametre Violation'ları`;
+                        data = oslResults.validation_results.filter(r => !r.project_compliance.is_compliant);
+                        break;
+                    case 'ck_violations':
+                        titleText = `CK Modülü Violation'ları`;
+                        data = oslResults.validation_results.filter(r => r.ck_module_compliance.is_ck_module && !r.ck_module_compliance.is_compliant);
+                        break;
+                }
+            }
+            
+            modalTitle.textContent = titleText;
+            searchInput.value = '';
+            searchInput.placeholder = '🔍 Inner reference ara...';
+            
+            currentModalData = { type: 'osl', subtype: type, data: data };
+            renderOSLModalContent(data);
+            
+            searchInput.oninput = () => filterOSLModalContent(searchInput.value);
+            modal.classList.add('show');
+        }
+
+        // Render TEI modal content
+        function renderTEIModalContent(data) {
+            const modalBody = document.getElementById('modalBody');
+            const resultsCount = document.getElementById('resultsCount');
+            
+            if (!data || data.length === 0) {
+                modalBody.innerHTML = '<div class="empty-state"><h3>Sonuç bulunamadı</h3></div>';
+                resultsCount.textContent = 'Toplam: 0 sonuç';
+                return;
+            }
+            
+            resultsCount.textContent = `Toplam: ${data.length} sonuç`;
+            
+            let contentHtml = '';
+            
+            data.forEach((item, index) => {
+                if (typeof item === 'string') {
+                    // Simple string data (not found items)
+                    contentHtml += `
+                        <div class="modal-item">
+                            <div class="modal-item-header">Part ${index + 1}: ${item}</div>
+                            <div class="modal-item-content">
+                                <div class="modal-item-field">
+                                    <span class="field-label">VPL Referansı:</span>
+                                    <span class="field-value error">${item}</span>
+                                </div>
+                                <div class="modal-item-field">
+                                    <span class="field-label">Durum:</span>
+                                    <span class="field-value error">TEI'de bulunamadı</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Object data (found items, validation errors, etc.)
+                    let statusClass = 'success';
+                    let statusText = 'Uyumlu';
+                    
+                    if (item.error_reason) {
+                        statusClass = 'error';
+                        statusText = 'Hata';
+                    } else if (!item.description_exists) {
+                        statusClass = 'warning';
+                        statusText = 'Eksik açıklama';
+                    }
+                    
+                    contentHtml += `
+                        <div class="modal-item">
+                            <div class="modal-item-header">${item.vpl_part_reference || item.customer_reference}</div>
+                            <div class="modal-item-content">
+                                <div class="modal-item-field">
+                                    <span class="field-label">Customer Reference:</span>
+                                    <span class="field-value">${item.customer_reference || '-'}</span>
+                                </div>
+                                <div class="modal-item-field">
+                                    <span class="field-label">Inner Reference:</span>
+                                    <span class="field-value">${item.inner_reference || '-'}</span>
+                                </div>
+                                <div class="modal-item-field">
+                                    <span class="field-label">Part Açıklaması:</span>
+                                    <span class="field-value">${item.part_description || 'Yok'}</span>
+                                </div>
+                                <div class="modal-item-field">
+                                    <span class="field-label">Durum:</span>
+                                    <span class="field-value ${statusClass}">${statusText}</span>
+                                </div>
+                                ${item.expected_inner ? `
+                                    <div class="modal-item-field">
+                                        <span class="field-label">Beklenen Inner:</span>
+                                        <span class="field-value warning">${item.expected_inner}</span>
+                                    </div>
+                                    <div class="modal-item-field">
+                                        <span class="field-label">Gerçek Inner:</span>
+                                        <span class="field-value error">${item.actual_inner}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            ${item.error_reason ? `
+                                <div class="violations-list">
+                                    <div class="violation-item">${item.error_reason}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+            });
+            
+            modalBody.innerHTML = contentHtml;
+        }
+
+        // Render OSL modal content
+        function renderOSLModalContent(data) {
+            const modalBody = document.getElementById('modalBody');
+            const resultsCount = document.getElementById('resultsCount');
+            
+            if (!data || data.length === 0) {
+                modalBody.innerHTML = '<div class="empty-state"><h3>Sonuç bulunamadı</h3></div>';
+                resultsCount.textContent = 'Toplam: 0 sonuç';
+                return;
+            }
+            
+            resultsCount.textContent = `Toplam: ${data.length} sonuç`;
+            
+            let contentHtml = '';
+            
+            data.forEach((item, index) => {
+                const complianceClass = item.overall_compliance ? 'success' : 'error';
+                const complianceText = item.overall_compliance ? 'Uyumlu' : 'Violation Var';
+                
+                contentHtml += `
+                    <div class="modal-item">
+                        <div class="modal-item-header">${item.inner_reference}</div>
+                        <div class="modal-item-content">
+                            <div class="modal-item-field">
+                                <span class="field-label">Compliance Score:</span>
+                                <span class="field-value ${complianceClass}">${item.compliance_score?.toFixed(1) || 0}%</span>
+                            </div>
+                            <div class="modal-item-field">
+                                <span class="field-label">Genel Durum:</span>
+                                <span class="field-value ${complianceClass}">${complianceText}</span>
+                            </div>
+                            <div class="modal-item-field">
+                                <span class="field-label">MODULE:</span>
+                                <span class="field-value ${item.required_compliance?.has_module ? 'success' : 'error'}">${item.required_compliance?.module_value || 'Yok'}</span>
+                            </div>
+                            <div class="modal-item-field">
+                                <span class="field-label">PART_FAMILY:</span>
+                                <span class="field-value ${item.required_compliance?.has_part_family ? 'success' : 'error'}">${item.required_compliance?.part_family_value || 'Yok'}</span>
+                            </div>
+                            <div class="modal-item-field">
+                                <span class="field-label">PROJECT:</span>
+                                <span class="field-value ${item.project_compliance?.has_project ? 'success' : 'warning'}">${item.project_compliance?.project_value || 'Yok'}</span>
+                            </div>
+                            <div class="modal-item-field">
+                                <span class="field-label">PROJECT1:</span>
+                                <span class="field-value ${item.project_compliance?.has_project1 ? 'success' : 'warning'}">${item.project_compliance?.project1_value || 'Yok'}</span>
+                            </div>
+                            ${item.ck_module_compliance?.is_ck_module ? `
+                                <div class="modal-item-field">
+                                    <span class="field-label">LABEL_POSITION:</span>
+                                    <span class="field-value ${item.ck_module_compliance.has_label_position ? 'success' : 'error'}">${item.ck_module_compliance.label_position_value || 'Yok'}</span>
+                                </div>
+                                <div class="modal-item-field">
+                                    <span class="field-label">LABEL_TYPE:</span>
+                                    <span class="field-value ${item.ck_module_compliance.has_label_type ? 'success' : 'error'}">${item.ck_module_compliance.label_type_value || 'Yok'}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${item.violation_reasons && item.violation_reasons.length > 0 ? `
+                            <div class="violations-list">
+                                ${item.violation_reasons.map(reason => `<div class="violation-item">${reason}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            modalBody.innerHTML = contentHtml;
+        }
+
+        // Filter modal content
+        function filterTEIModalContent(searchTerm) {
+            if (!currentModalData || currentModalData.type !== 'tei') return;
+            
+            const originalData = currentModalData.data;
+            
+            if (!searchTerm.trim()) {
+                renderTEIModalContent(originalData);
+                return;
+            }
+            
+            const filteredData = originalData.filter(item => {
+                if (typeof item === 'string') {
+                    return item.toLowerCase().includes(searchTerm.toLowerCase());
+                } else {
+                    return (item.vpl_part_reference && item.vpl_part_reference.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                           (item.customer_reference && item.customer_reference.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                           (item.inner_reference && item.inner_reference.toLowerCase().includes(searchTerm.toLowerCase()));
+                }
+            });
+            
+            renderTEIModalContent(filteredData);
+        }
+
+        function filterOSLModalContent(searchTerm) {
+            if (!currentModalData || currentModalData.type !== 'osl') return;
+            
+            const originalData = currentModalData.data;
+            
+            if (!searchTerm.trim()) {
+                renderOSLModalContent(originalData);
+                return;
+            }
+            
+            const filteredData = originalData.filter(item => 
+                item.inner_reference.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            
+            renderOSLModalContent(filteredData);
+        }
+
+        // Apply filter
+        function applyFilter() {
+            const filterValue = document.getElementById('filterSelect').value;
+            
+            if (!currentModalData) return;
+            
+            let filteredData = currentModalData.data;
+            
+            if (currentModalData.type === 'osl' && filterValue !== 'all') {
+                if (filterValue === 'violations') {
+                    filteredData = currentModalData.data.filter(item => !item.overall_compliance);
+                } else if (filterValue === 'compliant') {
+                    filteredData = currentModalData.data.filter(item => item.overall_compliance);
+                }
+            }
+            
+            if (currentModalData.type === 'tei') {
+                renderTEIModalContent(filteredData);
+            } else {
+                renderOSLModalContent(filteredData);
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            const modal = document.getElementById('detailModal');
+            modal.classList.remove('show');
+            currentModalData = null;
+        }
+
+        // Export modal data to CSV
+        function exportModalData() {
+            if (!currentModalData) return;
+            
+            let csvContent = '';
+            let filename = `masterdata_${currentModalData.type}_${new Date().toISOString().split('T')[0]}.csv`;
+            
+            if (currentModalData.type === 'tei') {
+                csvContent = 'VPL Reference,Customer Reference,Inner Reference,Part Description,Status\n';
+                currentModalData.data.forEach(item => {
+                    if (typeof item === 'string') {
+                        csvContent += `"${item}","","","","TEI'de bulunamadı"\n`;
+                    } else {
+                        csvContent += `"${item.vpl_part_reference || ''}","${item.customer_reference || ''}","${item.inner_reference || ''}","${item.part_description || ''}","${item.error_reason || 'Uyumlu'}"\n`;
+                    }
+                });
+            } else if (currentModalData.type === 'osl') {
+                csvContent = 'Inner Reference,Compliance Score,Overall Status,MODULE,PART_FAMILY,PROJECT,PROJECT1,Violations\n';
+                currentModalData.data.forEach(item => {
+                    const violations = item.violation_reasons ? item.violation_reasons.join('; ') : '';
+                    csvContent += `"${item.inner_reference}","${item.compliance_score?.toFixed(1) || 0}%","${item.overall_compliance ? 'Uyumlu' : 'Violation'}","${item.required_compliance?.module_value || ''}","${item.required_compliance?.part_family_value || ''}","${item.project_compliance?.project_value || ''}","${item.project_compliance?.project1_value || ''}","${violations}"\n`;
+                });
+            }
+            
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Loading and error states
+        function showLoadingState() {
+            document.getElementById('teiStats').innerHTML = '<div class="loading">TEI istatistikleri yükleniyor...</div>';
+            document.getElementById('teiResults').innerHTML = '<div class="loading">TEI sonuçları yükleniyor...</div>';
+            document.getElementById('oslStats').innerHTML = '<div class="loading">OSL istatistikleri yükleniyor...</div>';
+            document.getElementById('oslResults').innerHTML = '<div class="loading">OSL sonuçları yükleniyor...</div>';
+        }
+
+        function showErrorState(message) {
+            const errorHtml = `
+                <div class="empty-state">
+                    <h3>⚠️ Veri Yüklenemedi</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+            
+            document.getElementById('teiResults').innerHTML = errorHtml;
+            document.getElementById('oslResults').innerHTML = errorHtml;
+        }
+
+        // Navigation functions
+        function goBack() {
+            window.location.href = '/selection.html';
+        }
+
+        function openConfig() {
+            window.location.href = '/config.html';
+        }
+
+        // Manual analysis
+        function manualAnalysis() {
+            const button = event.target;
+            const originalText = button.textContent;
+            
+            event.preventDefault();
+            
+            console.log('🔨 Manual masterdata analysis triggered');
+            
+            button.textContent = 'Analiz Ediliyor...';
+            button.disabled = true;
+            
+            fetch('/api/masterdata/manual-analysis', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => {
+                console.log('📥 Manual analysis response:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('📊 Manual analysis result:', data);
+                if (data.success) {
+                    console.log('✅ Manual masterdata analysis completed');
+                    // Refresh current analysis
+                    const today = new Date().toISOString().split('T')[0];
+                    setTimeout(() => {
+                        loadMasterdataAnalysis(today);
+                    }, 1000);
+                } else {
+                    console.error('❌ Manual analysis failed:', data.message);
+                    alert('Manuel analiz başarısız: ' + (data.message || 'Bilinmeyen hata'));
+                }
+            })
+            .catch(error => {
+                console.error('❌ Manual analysis error:', error);
+                alert('Manuel analiz sırasında bir hata oluştu: ' + error.message);
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+
+        // Reanalyze specific date
+        function reanalyze(date) {
+            const button = event.target;
+            const originalText = button.textContent;
+            
+            button.textContent = '⟳';
+            button.style.animation = 'spin 1s infinite linear';
+            
+            fetch('/api/masterdata/reanalyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: date })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadMasterdataAnalysis(date);
+                } else {
+                    alert('Yeniden analiz başarısız: ' + (data.message || 'Bilinmeyen hata'));
+                }
+            })
+            .catch(error => {
+                console.error('Reanalyze error:', error);
+                alert('Yeniden analiz sırasında bir hata oluştu');
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.style.animation = '';
+            });
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Generate dynamic date cards for last 7 days
+            generateDateCards();
+            
+            // Load current date analysis
+            const today = new Date().toISOString().split('T')[0];
+            loadMasterdataAnalysis(today);
+            
+            // Set current user
+            document.getElementById('currentUser').textContent = 'Admin';
+            
+            // Close modal when clicking outside
+            document.getElementById('detailModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+        });
+
+        // Generate date cards dynamically
+        function generateDateCards() {
+            const container = document.getElementById('dateCards');
+            const today = new Date();
+            
+            // Generate cards for last 7 days
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                
+                const dateStr = date.toISOString().split('T')[0];
+                const displayDate = formatDateTurkish(date);
+                
+                const cardHTML = `
+                    <div class="date-card ${i === 0 ? 'active' : ''}" onclick="loadMasterdataAnalysis('${dateStr}')">
+                        <div class="date-text">${displayDate}</div>
+                        <div class="date-details">Masterdata Analizi</div>
+                        <button class="reanalyze-btn" onclick="event.stopPropagation(); reanalyze('${dateStr}')">↻</button>
+                    </div>
+                `;
+                
+                container.innerHTML += cardHTML;
+            }
+        }
+
+        // Format date in Turkish
+        function formatDateTurkish(date) {
+            const months = [
+                'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+            ];
+            
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `${day} ${month} ${year}`;
+        }
+
+        // Add CSS animation for spinning
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: translateY(-50%) rotate(0deg); }
+                100% { transform: translateY(-50%) rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

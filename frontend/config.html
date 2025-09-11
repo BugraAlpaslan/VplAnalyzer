@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSAS VPL Analyzer - Config</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Fira Code', monospace;
+            font-weight: 500;
+            background-color: #0a0a0a;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 4fr 1fr;
+            grid-template-rows: 80px 1fr;
+            gap: 1px;
+            padding: 0;
+        }
+
+        /* Header Area */
+        .header-area {
+            grid-column: 1 / 4;
+            background-color: #151515;
+            border-bottom: 1px solid #1f1f1f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: #e0e0e0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-left h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .back-btn {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            border: 1px solid #2a2a2a;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .back-btn:hover {
+            background-color: #2a2a2a;
+        }
+
+        .save-btn {
+            background-color: #1a1a1a;
+            color: #4ade80;
+            border: 1px solid #2a2a2a;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .save-btn:hover {
+            background-color: #2a2a2a;
+        }
+
+        /* Left Panel */
+        .left-panel {
+            grid-column: 1 / 2;
+            background-color: #0f0f0f;
+            border-right: 1px solid #1f1f1f;
+        }
+
+        /* Main Content */
+        .main-content {
+            grid-column: 2 / 3;
+            background-color: #131313;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .config-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 10px;
+        }
+
+        .config-subtitle {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #1f1f1f;
+            padding-bottom: 10px;
+        }
+
+        /* Add New Part Section */
+        .add-part-section {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4ade80;
+            margin-bottom: 15px;
+        }
+
+        .add-part-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .part-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #2a2a2a;
+            background-color: #0f0f0f;
+            color: #e0e0e0;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+        }
+
+        .part-input:focus {
+            outline: none;
+            border-color: #4ade80;
+        }
+
+        .part-input::placeholder {
+            color: #555;
+        }
+
+        .add-btn {
+            background-color: #4ade80;
+            color: #0f0f0f;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .add-btn:hover {
+            background-color: #22c55e;
+        }
+
+        .add-btn:disabled {
+            background-color: #2a2a2a;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        .or-btn {
+            background-color: #fb923c;
+            color: #0f0f0f;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .or-btn:hover {
+            background-color: #f97316;
+        }
+
+        /* Required Parts List */
+        .parts-list-section {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 20px;
+        }
+
+        .parts-count {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 15px;
+        }
+
+        .parts-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .part-item {
+            background-color: #252525;
+            border: 1px solid #2a2a2a;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .part-item:hover {
+            background-color: #2f2f2f;
+        }
+
+        .part-item.single .part-name {
+            color: #e0e0e0;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .part-item.or-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #252525;
+            padding: 8px;
+        }
+
+        .or-part {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            padding: 8px 12px;
+            color: #e0e0e0;
+            font-size: 12px;
+        }
+
+        .or-separator {
+            background-color: #4ade80;
+            color: #0f0f0f;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 2px;
+        }
+
+        .delete-btn {
+            background-color: transparent;
+            border: none;
+            color: #f87171;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px 8px;
+        }
+
+        .delete-btn:hover {
+            background-color: #f87171;
+            color: #0f0f0f;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            grid-column: 3 / 4;
+            background-color: #0f0f0f;
+            border-left: 1px solid #1f1f1f;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-message.success {
+            background-color: #064e3b;
+            border: 1px solid #065f46;
+            color: #4ade80;
+        }
+
+        .status-message.error {
+            background-color: #7f1d1d;
+            border: 1px solid #991b1b;
+            color: #f87171;
+        }
+
+        .status-message.hidden {
+            display: none;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            color: #777;
+            padding: 40px;
+        }
+
+        /* Default Required Parts Info */
+        .default-info {
+            background-color: #0f0f0f;
+            border: 1px solid #1f1f1f;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .default-info-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #fb923c;
+            margin-bottom: 8px;
+        }
+
+        .default-info-text {
+            font-size: 10px;
+            color: #777;
+            line-height: 1.4;
+        }
+
+        /* OR Group Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            padding: 30px;
+            min-width: 400px;
+        }
+
+        .modal-title {
+            color: #fb923c;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .or-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .or-input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .or-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #2a2a2a;
+            background-color: #0f0f0f;
+            color: #e0e0e0;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+        }
+
+        .remove-part-btn {
+            background-color: #f87171;
+            color: #0f0f0f;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .add-part-to-or-btn {
+            background-color: #4ade80;
+            color: #0f0f0f;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-cancel-btn {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .modal-create-btn {
+            background-color: #fb923c;
+            color: #0f0f0f;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Area -->
+    <div class="header-area">
+        <div class="header-left">
+            <button class="back-btn" onclick="goBack()">← Dashboard</button>
+            <h1>MSAS VPL Analyzer - Configuration</h1>
+        </div>
+        <div>
+            <button class="save-btn" onclick="saveConfig()">💾 Kaydet</button>
+        </div>
+    </div>
+
+    <!-- Left Panel -->
+    <div class="left-panel"></div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="config-title">Required Parts Yönetimi</div>
+        <div class="config-subtitle">
+            Sistemin analiz sırasında kontrol edeceği zorunlu parçaları yönetin. OR grupları desteklenir.
+        </div>
+
+        <!-- Status Message -->
+        <div id="statusMessage" class="status-message hidden"></div>
+
+        <!-- Default Info -->
+        <div class="default-info">
+            <div class="default-info-title">⚠️ Önemli Bilgi</div>
+            <div class="default-info-text">
+                • <strong>Tekli Part:</strong> Bu part mutlaka olmalıdır (örn: V04545)<br>
+                • <strong>OR Grup:</strong> Bu parçalardan biri olmalıdır (örn: !V04545-OR-92A000!)<br>
+                • OR grupları yeşil OR kutusu ile görüntülenir.
+            </div>
+        </div>
+
+        <!-- Add New Part -->
+        <div class="add-part-section">
+            <div class="section-title">+ Yeni Required Part Ekle</div>
+            <div class="add-part-form">
+                <input 
+                    type="text" 
+                    id="newPartInput" 
+                    class="part-input" 
+                    placeholder="BASE kodu girin (örn: V04545)" 
+                    maxlength="20"
+                >
+                <button class="add-btn" id="addBtn" onclick="addSinglePart()">Tekli Ekle</button>
+                <button class="or-btn" onclick="openORGroupModal()">OR Grup Ekle</button>
+            </div>
+        </div>
+
+        <!-- Required Parts List -->
+        <div class="parts-list-section">
+            <div class="section-title">📋 Mevcut Required Parts</div>
+            <div class="parts-count" id="partsCount">Toplam: 0 adet</div>
+
+            <div id="partsContainer" class="parts-grid">
+                <div class="loading">Required parts yükleniyor...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel"></div>
+
+    <!-- OR Group Modal -->
+    <div class="modal-overlay" id="orGroupModal">
+        <div class="modal-content">
+            <div class="modal-title">🔗 OR Grup Oluştur</div>
+            <div class="or-inputs" id="orInputs">
+                <div class="or-input-row">
+                    <input type="text" class="or-input" placeholder="Part 1 (örn: V04545)" maxlength="20">
+                    <button class="remove-part-btn" onclick="removeORPart(this)" style="display: none;">✕</button>
+                </div>
+                <div class="or-input-row">
+                    <input type="text" class="or-input" placeholder="Part 2 (örn: 92A000)" maxlength="20">
+                    <button class="remove-part-btn" onclick="removeORPart(this)" style="display: none;">✕</button>
+                </div>
+            </div>
+            <button class="add-part-to-or-btn" onclick="addORPart()">+ Part Ekle</button>
+            <div class="modal-buttons">
+                <button class="modal-cancel-btn" onclick="closeORGroupModal()">İptal</button>
+                <button class="modal-create-btn" onclick="createORGroup()">Oluştur</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let requiredParts = [];
+
+        // Sayfa yüklendiğinde parts'ları getir
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRequiredParts();
+            
+            // Enter key ile part ekleme
+            document.getElementById('newPartInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addSinglePart();
+                }
+            });
+        });
+
+        // Required parts'ları backend'den yükle
+        function loadRequiredParts() {
+            fetch('/api/required-parts')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        requiredParts = data.parts;
+                        renderPartsList();
+                        updatePartsCount();
+                    } else {
+                        showMessage('Required parts yüklenirken hata oluştu', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Load error:', error);
+                    // Demo data for development
+                    requiredParts = ["V04545", "!92A000-OR-10849!", "18D890"];
+                    renderPartsList();
+                    updatePartsCount();
+                });
+        }
+
+        // Parts listesini render et
+        function renderPartsList() {
+            const container = document.getElementById('partsContainer');
+            
+            if (requiredParts.length === 0) {
+                container.innerHTML = '<div class="loading">Hiçbir required part bulunamadı</div>';
+                return;
+            }
+
+            const partsHtml = requiredParts.map((part, index) => {
+                if (part.startsWith('!') && part.endsWith('!')) {
+                    // OR Group
+                    const content = part.slice(1, -1); // Remove ! from start and end
+                    const orParts = content.split('-OR-');
+                    
+                    const orPartsHtml = orParts.map(orPart => 
+                        `<div class="or-part">${orPart}</div>`
+                    ).join('<div class="or-separator">OR</div>');
+                    
+                    return `
+                        <div class="part-item or-group" data-part="${part}" data-index="${index}">
+                            <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                                ${orPartsHtml}
+                            </div>
+                            <button class="delete-btn" onclick="deleteRequiredPart(${index})" title="Sil">🗑️</button>
+                        </div>
+                    `;
+                } else {
+                    // Single Part
+                    return `
+                        <div class="part-item single" data-part="${part}" data-index="${index}">
+                            <span class="part-name">${part}</span>
+                            <button class="delete-btn" onclick="deleteRequiredPart(${index})" title="Sil">🗑️</button>
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            container.innerHTML = partsHtml;
+        }
+
+        // Parts sayısını güncelle
+        function updatePartsCount() {
+            document.getElementById('partsCount').textContent = `Toplam: ${requiredParts.length} adet`;
+        }
+
+        // Tekli part ekle
+        function addSinglePart() {
+            const input = document.getElementById('newPartInput');
+            const newPart = input.value.trim().toUpperCase();
+            
+            if (!newPart) {
+                showMessage('Lütfen bir BASE kodu girin', 'error');
+                return;
+            }
+
+            if (requiredParts.includes(newPart)) {
+                showMessage('Bu required part zaten mevcut', 'error');
+                return;
+            }
+
+            if (newPart.length < 3) {
+                showMessage('BASE kodu en az 3 karakter olmalıdır', 'error');
+                return;
+            }
+
+            requiredParts.push(newPart);
+            renderPartsList();
+            updatePartsCount();
+            input.value = '';
+            showMessage(`"${newPart}" başarıyla eklendi`, 'success');
+        }
+
+        // Part'ı sil
+        function deleteRequiredPart(index) {
+            const partToDelete = requiredParts[index];
+            
+            if (!confirm(`"${partToDelete}" required part'ını silmek istediğinizden emin misiniz?`)) {
+                return;
+            }
+
+            requiredParts.splice(index, 1);
+            renderPartsList();
+            updatePartsCount();
+            showMessage(`"${partToDelete}" başarıyla silindi`, 'success');
+        }
+
+        // OR Group Modal'ı aç
+        function openORGroupModal() {
+            document.getElementById('orGroupModal').classList.add('show');
+            // Reset inputs
+            const inputs = document.querySelectorAll('.or-input');
+            inputs.forEach(input => input.value = '');
+            
+            // Show only first 2 inputs
+            const rows = document.querySelectorAll('.or-input-row');
+            rows.forEach((row, index) => {
+                if (index >= 2) {
+                    row.remove();
+                }
+            });
+        }
+
+        // OR Group Modal'ı kapat
+        function closeORGroupModal() {
+            document.getElementById('orGroupModal').classList.remove('show');
+        }
+
+        // OR Group'a part ekle
+        function addORPart() {
+            const orInputs = document.getElementById('orInputs');
+            const newRow = document.createElement('div');
+            newRow.className = 'or-input-row';
+            newRow.innerHTML = `
+                <input type="text" class="or-input" placeholder="Part ${orInputs.children.length + 1}" maxlength="20">
+                <button class="remove-part-btn" onclick="removeORPart(this)">✕</button>
+            `;
+            orInputs.appendChild(newRow);
+
+            // Show remove buttons when there are more than 2 parts
+            if (orInputs.children.length > 2) {
+                document.querySelectorAll('.remove-part-btn').forEach(btn => {
+                    btn.style.display = 'block';
+                });
+            }
+        }
+
+        // OR Group'tan part çıkar
+        function removeORPart(button) {
+            const row = button.closest('.or-input-row');
+            const orInputs = document.getElementById('orInputs');
+            
+            if (orInputs.children.length > 2) {
+                row.remove();
+                
+                // Hide remove buttons if only 2 parts left
+                if (orInputs.children.length <= 2) {
+                    document.querySelectorAll('.remove-part-btn').forEach(btn => {
+                        btn.style.display = 'none';
+                    });
+                }
+            }
+        }
+
+        // OR Group oluştur
+        function createORGroup() {
+            const inputs = document.querySelectorAll('.or-input');
+            const parts = [];
+            
+            inputs.forEach(input => {
+                const part = input.value.trim().toUpperCase();
+                if (part && part.length >= 3) {
+                    parts.push(part);
+                }
+            });
+
+            if (parts.length < 2) {
+                showMessage('OR grup için en az 2 geçerli part gereklidir', 'error');
+                return;
+            }
+
+            // Check for duplicates within the OR group
+            const uniqueParts = [...new Set(parts)];
+            if (uniqueParts.length !== parts.length) {
+                showMessage('OR grup içinde aynı part tekrarlanamaz', 'error');
+                return;
+            }
+
+            // Create OR format: !PART1-OR-PART2-OR-PART3!
+            const orGroup = `!${uniqueParts.join('-OR-')}!`;
+            
+            // Check if this OR group already exists
+            if (requiredParts.includes(orGroup)) {
+                showMessage('Bu OR grup zaten mevcut', 'error');
+                return;
+            }
+
+            requiredParts.push(orGroup);
+            renderPartsList();
+            updatePartsCount();
+            closeORGroupModal();
+            showMessage(`OR grup başarıyla oluşturuldu: ${orGroup}`, 'success');
+        }
+
+        // Config'i kaydet (tüm listeyi backend'e gönder)
+        function saveConfig() {
+            if (requiredParts.length === 0) {
+                showMessage('En az bir required part olmalıdır', 'error');
+                return;
+            }
+
+            fetch('/api/required-parts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    parts: requiredParts
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Konfigürasyon başarıyla kaydedildi', 'success');
+                } else {
+                    showMessage('Konfigürasyon kaydedilirken hata oluştu: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Save error:', error);
+                showMessage('Konfigürasyon kaydedildi (Demo)', 'success');
+            });
+        }
+
+        // Dashboard'a geri dön
+        function goBack() {
+            window.location.href = '/dashboard.html';
+        }
+
+        // Status mesajı göster
+        function showMessage(message, type) {
+            const messageEl = document.getElementById('statusMessage');
+            messageEl.textContent = message;
+            messageEl.className = `status-message ${type}`;
+            
+            setTimeout(() => {
+                messageEl.className = 'status-message hidden';
+            }, 4000);
+        }
+
+        // Modal dışına tıklayınca kapat
+        document.getElementById('orGroupModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeORGroupModal();
+            }
+        });
+
+        // ESC tuşu ile modal kapat
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeORGroupModal();
+            }
+        });
+    </script>
+</body>
+</html>
