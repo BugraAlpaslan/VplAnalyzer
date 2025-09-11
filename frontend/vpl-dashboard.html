@@ -913,60 +913,68 @@
         }
 
         // Enhanced load analysis function
-        function loadAnalysisForDate(dateStr, callback) {
-            console.log('🔍 Loading analysis for date:', dateStr);
+        
+// vpl-dashboard.html içindeki loadAnalysisForDate fonksiyonunu bulun ve değiştirin:
+
+function loadAnalysisForDate(dateStr, callback) {
+    console.log('🔍 Loading analysis for date:', dateStr);
+    
+    // Update title
+    updateAnalysisTitle(dateStr);
+    
+    // Show loading state
+    const changesContainer = document.getElementById('changesContainer');
+    const missingContainer = document.getElementById('missingPartsContainer');
+    
+    changesContainer.innerHTML = '<div class="loading">Analiz verisi yükleniyor...</div>';
+    missingContainer.innerHTML = '<div class="loading">Eksik parts yükleniyor...</div>';
+    
+    // Clear active states
+    document.querySelectorAll('.date-card, .selected-date-display').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // Fetch analysis data
+    const apiUrl = `/api/analysis/${dateStr}`;
+    console.log('📡 Fetching:', apiUrl);
+    
+    fetch(apiUrl)
+        .then(response => {
+            console.log('📥 Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Response data:', data); // ✅ Bu satırı ekleyin
             
-            // Update title
-            updateAnalysisTitle(dateStr);
-            
-            // Show loading state
-            const changesContainer = document.getElementById('changesContainer');
-            const missingContainer = document.getElementById('missingPartsContainer');
-            
-            changesContainer.innerHTML = '<div class="loading">Analiz verisi yükleniyor...</div>';
-            missingContainer.innerHTML = '<div class="loading">Eksik parts yükleniyor...</div>';
-            
-            // Clear active states
-            document.querySelectorAll('.date-card, .selected-date-display').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            // Fetch analysis data
-            const apiUrl = `/api/analysis/${dateStr}`;
-            console.log('📡 Fetching:', apiUrl);
-            
-            fetch(apiUrl)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success && data.analysis) {
-                        currentAnalysisData = data.analysis;
-                        updateAnalysisDisplay(data.analysis);
-                        
-                        // Set active state for appropriate date display
-                        if (selectedCustomDate === dateStr) {
-                            document.getElementById('selectedDateDisplay').classList.add('active');
-                        } else {
-                            setActiveDateCard(dateStr);
-                        }
-                        
-                        console.log('✅ Analysis loaded successfully');
-                    } else {
-                        showErrorState('Bu tarih için analiz verisi bulunamadı: ' + dateStr);
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ Analysis load error:', error);
-                    showErrorState('Analiz verisi yüklenirken hata oluştu: ' + error.message);
-                })
-                .finally(() => {
-                    if (callback) callback();
-                });
-        }
+            if (data.success && data.data && data.data.analysis) {
+                currentAnalysisData = data.data.analysis;
+                updateAnalysisDisplay(data.data.analysis);
+                
+                // Set active state for appropriate date display
+                if (selectedCustomDate === dateStr) {
+                    document.getElementById('selectedDateDisplay').classList.add('active');
+                } else {
+                    setActiveDateCard(dateStr);
+                }
+                
+                console.log('✅ Analysis loaded successfully');
+            } else {
+                console.error('❌ Invalid response structure:', data); // ✅ Bu satırı ekleyin
+                showErrorState('Bu tarih için analiz verisi bulunamadı: ' + dateStr);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Analysis load error:', error);
+            showErrorState('Analiz verisi yüklenirken hata oluştu: ' + error.message);
+        })
+        .finally(() => {
+            if (callback) callback();
+        });
+}
+
 
         // Original loadAnalysis function for date cards
         function loadAnalysis(date) {
@@ -1096,11 +1104,17 @@
         }
 
         // Update analysis display with real data
-        function updateAnalysisDisplay(analysisData) {
-            updatePartChanges(analysisData.part_changes || []);
-            updateMissingParts(analysisData.missing_required_file2 || []);
-        }
-
+   function updateAnalysisDisplay(analysisData) {
+    console.log('🎯 Updating display with:', analysisData); // ✅ Bu satırı ekleyin
+    
+    if (!analysisData) {
+        console.error('❌ analysisData is null or undefined');
+        return;
+    }
+    
+    updatePartChanges(analysisData.part_changes || []);
+    updateMissingParts(analysisData.missing_required_file2 || []);
+}
         // Update part changes section
         function updatePartChanges(partChanges) {
             const container = document.getElementById('changesContainer');

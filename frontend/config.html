@@ -436,53 +436,191 @@
     <!-- Left Panel -->
     <div class="left-panel"></div>
 
-    <!-- Main Content -->
     <div class="main-content">
-        <div class="config-title">Required Parts Yönetimi</div>
-        <div class="config-subtitle">
-            Sistemin analiz sırasında kontrol edeceği zorunlu parçaları yönetin. OR grupları desteklenir.
+    <div class="config-title">Required Parts Yönetimi</div>
+    <div class="config-subtitle">
+        Proje seçin ve o projeye özel zorunlu parçaları yönetin. OR grupları desteklenir.
+    </div>
+
+    <!-- Status Message -->
+    <div id="statusMessage" class="status-message hidden"></div>
+
+    <!-- Project Selection -->
+    <div class="project-selection-section">
+        <div class="section-title">🎯 Proje Seçimi</div>
+        <div class="project-selector">
+            <label class="project-label">Proje:</label>
+            <select id="projectSelector" class="project-dropdown" onchange="changeProject()">
+                <option value="">Proje seçin...</option>
+                <option value="V710_PROJECT">V710 Project (TAN Prefix)</option>
+                <option value="J74_PROJECT">J74 Project (TAR Prefix)</option>
+                <option value="DEFAULT_PROJECT">Default Project</option>
+            </select>
         </div>
-
-        <!-- Status Message -->
-        <div id="statusMessage" class="status-message hidden"></div>
-
-        <!-- Default Info -->
-        <div class="default-info">
-            <div class="default-info-title">⚠️ Önemli Bilgi</div>
-            <div class="default-info-text">
-                • <strong>Tekli Part:</strong> Bu part mutlaka olmalıdır (örn: V04545)<br>
-                • <strong>OR Grup:</strong> Bu parçalardan biri olmalıdır (örn: !V04545-OR-92A000!)<br>
-                • OR grupları yeşil OR kutusu ile görüntülenir.
-            </div>
-        </div>
-
-        <!-- Add New Part -->
-        <div class="add-part-section">
-            <div class="section-title">+ Yeni Required Part Ekle</div>
-            <div class="add-part-form">
-                <input 
-                    type="text" 
-                    id="newPartInput" 
-                    class="part-input" 
-                    placeholder="BASE kodu girin (örn: V04545)" 
-                    maxlength="20"
-                >
-                <button class="add-btn" id="addBtn" onclick="addSinglePart()">Tekli Ekle</button>
-                <button class="or-btn" onclick="openORGroupModal()">OR Grup Ekle</button>
-            </div>
-        </div>
-
-        <!-- Required Parts List -->
-        <div class="parts-list-section">
-            <div class="section-title">📋 Mevcut Required Parts</div>
-            <div class="parts-count" id="partsCount">Toplam: 0 adet</div>
-
-            <div id="partsContainer" class="parts-grid">
-                <div class="loading">Required parts yükleniyor...</div>
+        
+        <!-- Selected Project Info -->
+        <div id="selectedProjectInfo" class="selected-project-info hidden">
+            <div class="project-info-title">📊 Seçili Proje Bilgileri</div>
+            <div class="project-details">
+                <div class="detail-item">
+                    <span class="detail-label">Proje Adı:</span>
+                    <span class="detail-value" id="projectName">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">VIN Prefix:</span>
+                    <span class="detail-value" id="projectPrefix">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Mevcut Parts:</span>
+                    <span class="detail-value" id="projectPartsCount">-</span>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Default Info -->
+    <div class="default-info">
+        <div class="default-info-title">⚠️ Önemli Bilgi</div>
+        <div class="default-info-text">
+            • <strong>Tekli Part:</strong> Bu part mutlaka olmalıdır (örn: V04545)<br>
+            • <strong>OR Grup:</strong> Bu parçalardan biri olmalıdır (örn: !V04545-OR-92A000!)<br>
+            • OR grupları yeşil OR kutusu ile görüntülenir.
+        </div>
+    </div>
+
+    <!-- Add New Part -->
+    <div class="add-part-section" id="addPartSection" style="display: none;">
+        <div class="section-title">+ Yeni Required Part Ekle</div>
+        <div class="project-indicator">
+            <span class="indicator-label">Seçili Proje:</span>
+            <span class="indicator-value" id="currentProjectIndicator">-</span>
+        </div>
+        <div class="add-part-form">
+            <input 
+                type="text" 
+                id="newPartInput" 
+                class="part-input" 
+                placeholder="BASE kodu girin (örn: V04545)" 
+                maxlength="20"
+            >
+            <button class="add-btn" id="addBtn" onclick="addSinglePart()">Tekli Ekle</button>
+            <button class="or-btn" onclick="openORGroupModal()">OR Grup Ekle</button>
+        </div>
+    </div>
+
+    <!-- Required Parts List -->
+    <div class="parts-list-section" id="partsListSection" style="display: none;">
+        <div class="section-title">📋 Mevcut Required Parts</div>
+        <div class="parts-count" id="partsCount">Toplam: 0 adet</div>
+
+        <div id="partsContainer" class="parts-grid">
+            <div class="loading">Proje seçin...</div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Project Selection Styles */
+.project-selection-section {
+    background-color: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.project-selector {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.project-label {
+    color: #4ade80;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 60px;
+}
+
+.project-dropdown {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #2a2a2a;
+    background-color: #0f0f0f;
+    color: #e0e0e0;
+    font-family: 'Fira Code', monospace;
+    font-size: 12px;
+    max-width: 300px;
+}
+
+.project-dropdown:focus {
+    outline: none;
+    border-color: #4ade80;
+}
+
+.selected-project-info {
+    background-color: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    padding: 15px;
+}
+
+.selected-project-info.hidden {
+    display: none;
+}
+
+.project-info-title {
+    color: #4ade80;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.project-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.detail-label {
+    color: #777;
+    font-size: 11px;
+}
+
+.detail-value {
+    color: #e0e0e0;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.project-indicator {
+    background-color: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    padding: 8px 12px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.indicator-label {
+    color: #777;
+    font-size: 11px;
+}
+
+.indicator-value {
+    color: #4ade80;
+    font-size: 11px;
+    font-weight: 600;
+}
+</style>
     <!-- Right Panel -->
     <div class="right-panel"></div>
 
@@ -524,27 +662,255 @@
         });
 
         // Required parts'ları backend'den yükle
-        function loadRequiredParts() {
-            fetch('/api/required-parts')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        requiredParts = data.parts;
-                        renderPartsList();
-                        updatePartsCount();
-                    } else {
-                        showMessage('Required parts yüklenirken hata oluştu', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Load error:', error);
-                    // Demo data for development
-                    requiredParts = ["V04545", "!92A000-OR-10849!", "18D890"];
-                    renderPartsList();
-                    updatePartsCount();
-                });
-        }
+        // Required parts'ları backend'den yükle
+        // Config.html içindeki JavaScript'i şu şekilde güncelleyin:
 
+// Global variables
+let currentProject = "V710_PROJECT";
+
+// Project bilgileri
+const projectInfo = {
+    "V710_PROJECT": {
+        name: "V710 Project",
+        prefix: "TAN (V710 Araçları)",
+        description: "V710 proje araçları için required parts"
+    },
+    "J74_PROJECT": {
+        name: "J74 Project", 
+        prefix: "TAR (J74 Araçları)",
+        description: "J74 proje araçları için required parts"
+    },
+     
+};
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', function() {
+    // Enter key ile part ekleme
+    document.getElementById('newPartInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            addSinglePart();
+        }
+    });
+});
+
+// Proje değiştirme
+function changeProject() {
+    const projectSelect = document.getElementById('projectSelector'); // ✅ Doğru ID
+    const selectedProject = projectSelect.value;
+    
+    if (!selectedProject) {
+        showMessage('Proje seçilmedi', 'error');
+        return;
+    }
+    
+    currentProject = selectedProject;
+    
+    // Project adını güncelle
+    document.getElementById('currentProjectIndicator').textContent = projectInfo[selectedProject].name;
+    
+    loadRequiredPartsForProject(selectedProject);
+    showMessage(`${projectInfo[selectedProject].name} seçildi`, 'success');
+}
+// Proje bilgilerini göster
+function showProjectInfo(project) {
+    const info = projectInfo[project];
+    
+    document.getElementById('projectName').textContent = info.name;
+    document.getElementById('projectPrefix').textContent = info.prefix;
+    document.getElementById('currentProjectIndicator').textContent = info.name;
+    
+    // Sections'ları göster
+    document.getElementById('selectedProjectInfo').classList.remove('hidden');
+    document.getElementById('addPartSection').style.display = 'block';
+    document.getElementById('partsListSection').style.display = 'block';
+}
+
+// Proje sections'larını gizle
+function hideProjectSections() {
+    document.getElementById('selectedProjectInfo').classList.add('hidden');
+    document.getElementById('addPartSection').style.display = 'none';
+    document.getElementById('partsListSection').style.display = 'none';
+    currentProject = "";
+    requiredParts = [];
+}
+
+// Seçili proje için required parts'ları yükle
+function loadRequiredPartsForProject(project) {
+    if (!project) {
+        showMessage('Proje seçilmedi', 'error');
+        return;
+    }
+    
+    fetch(`/api/required-parts/${project}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                requiredParts = data.data || [];
+                renderPartsList();
+                updatePartsCount();
+            } else {
+                showMessage('Required parts yüklenirken hata oluştu', 'error');
+                requiredParts = [];
+                renderPartsList();
+                updatePartsCount();
+            }
+        })
+        .catch(error => {
+            console.error('Load error:', error);
+            showMessage('Bağlantı hatası: ' + error.message, 'error'); // ✅ Typo düzeltildi
+            requiredParts = [];
+            renderPartsList();
+            updatePartsCount();
+        });
+}
+// Proje parts sayısını güncelle
+function updateProjectPartsCount() {
+    document.getElementById('projectPartsCount').textContent = `${requiredParts.length} adet`;
+}
+
+// Parts listesini render et (değişiklik yok)
+function renderPartsList() {
+    const container = document.getElementById('partsContainer');
+    
+    if (requiredParts.length === 0) {
+        container.innerHTML = '<div class="loading">Bu proje için hiçbir required part bulunamadı</div>';
+        return;
+    }
+
+    const partsHtml = requiredParts.map((part, index) => {
+        if (part.startsWith('!') && part.endsWith('!')) {
+            // OR Group
+            const content = part.slice(1, -1);
+            const orParts = content.split('-OR-');
+            
+            const orPartsHtml = orParts.map(orPart => 
+                `<div class="or-part">${orPart}</div>`
+            ).join('<div class="or-separator">OR</div>');
+            
+            return `
+                <div class="part-item or-group" data-part="${part}" data-index="${index}">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                        ${orPartsHtml}
+                    </div>
+                    <button class="delete-btn" onclick="deleteRequiredPart(${index})" title="Sil">🗑️</button>
+                </div>
+            `;
+        } else {
+            // Single Part
+            return `
+                <div class="part-item single" data-part="${part}" data-index="${index}">
+                    <span class="part-name">${part}</span>
+                    <button class="delete-btn" onclick="deleteRequiredPart(${index})" title="Sil">🗑️</button>
+                </div>
+            `;
+        }
+    }).join('');
+
+    container.innerHTML = partsHtml;
+}
+
+// Parts sayısını güncelle
+function updatePartsCount() {
+    document.getElementById('partsCount').textContent = `Toplam: ${requiredParts.length} adet`;
+}
+
+// Tekli part ekle
+function addSinglePart() {
+    if (!currentProject) {
+        showMessage('Önce bir proje seçin', 'error');
+        return;
+    }
+    
+    const input = document.getElementById('newPartInput');
+    const newPart = input.value.trim().toUpperCase();
+    
+    if (!newPart) {
+        showMessage('Lütfen bir BASE kodu girin', 'error');
+        return;
+    }
+
+    if (requiredParts.includes(newPart)) {
+        showMessage('Bu required part zaten mevcut', 'error');
+        return;
+    }
+
+    if (newPart.length < 3) {
+        showMessage('BASE kodu en az 3 karakter olmalıdır', 'error');
+        return;
+    }
+
+    requiredParts.push(newPart);
+    renderPartsList();
+    updatePartsCount();
+    updateProjectPartsCount();
+    input.value = '';
+    showMessage(`"${newPart}" başarıyla eklendi (${projectInfo[currentProject].name})`, 'success');
+}
+
+// Part'ı sil
+function deleteRequiredPart(index) {
+    if (!currentProject) {
+        showMessage('Proje seçilmedi', 'error');
+        return;
+    }
+    
+    const partToDelete = requiredParts[index];
+    
+    if (!confirm(`"${partToDelete}" required part'ını ${projectInfo[currentProject].name} projesinden silmek istediğinizden emin misiniz?`)) {
+        return;
+    }
+
+    requiredParts.splice(index, 1);
+    renderPartsList();
+    updatePartsCount();
+    updateProjectPartsCount();
+    showMessage(`"${partToDelete}" başarıyla silindi`, 'success');
+}
+
+// Config'i kaydet
+function saveConfig() {
+    if (!currentProject) {
+        showMessage('Proje seçilmedi', 'error');
+        return;
+    }
+    
+    if (requiredParts.length === 0) {
+        showMessage('En az bir required part olmalıdır', 'error');
+        return;
+    }
+    
+    fetch(`/api/required-parts/${currentProject}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            parts: requiredParts
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(`${projectInfo[currentProject].name} konfigürasyonu başarıyla kaydedildi`, 'success');
+        } else {
+            showMessage('Konfigürasyon kaydedilirken hata oluştu: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Save error:', error);
+        showMessage('Bağlantı hatası: ' + error.message, 'error'); // ✅ Typo düzeltildi
+    });
+}
+// OR Group Modal fonksiyonları (değişiklik yok, sadece proje kontrolü eklenecek)
+function createORGroup() {
+    if (!currentProject) {
+        showMessage('Önce bir proje seçin', 'error');
+        return;
+    }
+    
+    // ... mevcut createORGroup kodları aynı ...
+}
+function loadRequiredParts() {
+    loadRequiredPartsForProject(currentProject);
+}
         // Parts listesini render et
         function renderPartsList() {
             const container = document.getElementById('partsContainer');
@@ -730,36 +1096,38 @@
         }
 
         // Config'i kaydet (tüm listeyi backend'e gönder)
-        function saveConfig() {
-            if (requiredParts.length === 0) {
-                showMessage('En az bir required part olmalıdır', 'error');
-                return;
-            }
-
-            fetch('/api/required-parts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    parts: requiredParts
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showMessage('Konfigürasyon başarıyla kaydedildi', 'success');
-                } else {
-                    showMessage('Konfigürasyon kaydedilirken hata oluştu: ' + data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Save error:', error);
-                showMessage('Konfigürasyon kaydedildi (Demo)', 'success');
-            });
+       function saveConfig() {
+    if (requiredParts.length === 0) {
+        showMessage('En az bir required part olmalıdır', 'error');
+        return;
+    }
+    
+    const project = 'V710_PROJECT'; // ✅ Sabit project ekle
+    
+    fetch(`/api/required-parts/${project}`, {  // ✅ Project parametresi eklendi
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            parts: requiredParts
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('Konfigürasyon başarıyla kaydedildi', 'success');
+        } else {
+            showMessage('Konfigürasyon kaydedilirken hata oluştu: ' + data.message, 'error');
         }
+    })
+    .catch(error => {
+        console.error('Save error:', error);
+        showMessage('Konfigürasyon kaydedildi (Demo)', 'success');
+    });
+}
 
         // Dashboard'a geri dön
         function goBack() {
-            window.location.href = '/dashboard.html';
+            window.location.href = '/vpl-dashboard ';
         }
 
         // Status mesajı göster
