@@ -722,70 +722,202 @@ func runCompleteAnalysis(date string) error {
 	return nil
 }
 
+// VPL dosyalarını karşılaştır ve detaylı change analizi yap
 func compareVPLFiles(date string, previousVPL, currentVPL []VPLRecord) []VPLIssue {
 	var issues []VPLIssue
 
-	// Create maps for easy lookup
+	// Create maps for easy lookup - VIN+PREFIX+BASE+SUFFIX combination
 	prevMap := make(map[string]VPLRecord)
+	currMap := make(map[string]VPLRecord)
+
+	// Create separate maps for part component tracking
+	prevPartMap := make(map[string]map[string]VPLRecord) // VIN -> PartName -> Record
+	currPartMap := make(map[string]map[string]VPLRecord) // VIN -> PartName -> Record
+
+	// Build previous maps
 	for _, record := range previousVPL {
 		key := record.VIN + "|" + record.PartName
 		prevMap[key] = record
+
+		if prevPartMap[record.VIN] == nil {
+			prevPartMap[record.VIN] = make(map[string]VPLRecord)
+		}
+		prevPartMap[record.VIN][record.PartName] = record
 	}
 
-	currMap := make(map[string]VPLRecord)
+	// Build current maps
 	for _, record := range currentVPL {
 		key := record.VIN + "|" + record.PartName
 		currMap[key] = record
+
+		if currPartMap[record.VIN] == nil {
+			currPartMap[record.VIN] = make(map[string]VPLRecord)
+		}
+		currPartMap[record.VIN][record.PartName] = record
 	}
 
-	// Find added parts
+	// Find added parts (in current but not in previous)
 	for key, currRecord := range currMap {
-		if prevRecord, exists := prevMap[key]; exists {
-			// Aynı VIN+Part var, değişmiş mi kontrol et
-			if prevRecord.PartName != currRecord.PartName {
+		if _, exists := prevMap[key]; !exists {
+			// Check if this is a component change vs completely new part
+			componentChange := findComponentChange(currRecord, prevPartMap[currRecord.VIN])
+
+			if componentChange != "" {
+				// This is a component change, not a new part
 				issues = append(issues, VPLIssue{
 					Date:      date,
 					VIN:       currRecord.VIN,
 					Project:   currRecord.DetectedProject,
-					IssueType: VPL_ISSUE_CHANGED,
-					OldPart:   prevRecord.PartName,
+					IssueType: componentChange, // PREFIX_CHANGED, BASE_CHANGED, SUFFIX_CHANGED
+					OldPart:   getOldPartForChange(currRecord, prevPartMap[currRecord.VIN], componentChange),
 					NewPart:   currRecord.PartName,
-					Details:   "Part changed",
+					Details:   fmt.Sprintf("%s changed", getComponentName(componentChange)),
+				})
+			} else {
+				// Completely new part
+				issues = append(issues, VPLIssue{
+					Date:      date,
+					VIN:       currRecord.VIN,
+					Project:   currRecord.DetectedProject,
+					IssueType: VPL_ISSUE_ADDED,
+					NewPart:   currRecord.PartName,
+					Details:   "Part added",
 				})
 			}
-		} else {
-			// Gerçekten yeni part
-			issues = append(issues, VPLIssue{
-				Date:      date,
-				VIN:       currRecord.VIN,
-				Project:   currRecord.DetectedProject,
-				IssueType: VPL_ISSUE_ADDED,
-				NewPart:   currRecord.PartName,
-				Details:   "Part added",
-			})
 		}
 	}
 
-	// Find removed parts
+	// Find removed parts (in previous but not in current)
 	for key, prevRecord := range prevMap {
 		if _, exists := currMap[key]; !exists {
-			issues = append(issues, VPLIssue{
-				Date:      date,
-				VIN:       prevRecord.VIN,
-				Project:   prevRecord.DetectedProject,
-				IssueType: VPL_ISSUE_REMOVED,
-				OldPart:   prevRecord.PartName,
-				Details:   "Part removed",
-			})
+			// Check if this part was modified instead of removed
+			if !isPartModified(prevRecord, currPartMap[prevRecord.VIN]) {
+				issues = append(issues, VPLIssue{
+					Date:      date,
+					VIN:       prevRecord.VIN,
+					Project:   prevRecord.DetectedProject,
+					IssueType: VPL_ISSUE_REMOVED,
+					OldPart:   prevRecord.PartName,
+					Details:   "Part removed",
+				})
+			}
 		}
 	}
 
-	log.Printf("📊 VPL Comparison: %d added, %d removed",
+	log.Printf("📊 VPL Comparison: %d added, %d removed, %d prefix changed, %d base changed, %d suffix changed",
 		countIssuesByType(issues, VPL_ISSUE_ADDED),
-		countIssuesByType(issues, VPL_ISSUE_REMOVED))
+		countIssuesByType(issues, VPL_ISSUE_REMOVED),
+		countIssuesByType(issues, "PREFIX_CHANGED"),
+		countIssuesByType(issues, "BASE_CHANGED"),
+		countIssuesByType(issues, "SUFFIX_CHANGED"))
 
 	return issues
 }
+
+// Check if a part has component changes (PREFIX, BASE, or SUFFIX)
+func findComponentChange(currentRecord VPLRecord, previousParts map[string]VPLRecord) string {
+	if previousParts == nil {
+		return "" // No previous parts for this VIN
+	}
+
+	// Check each previous part to see if any component matches
+	for _, prevRecord := range previousParts {
+		// Same PREFIX and BASE, different SUFFIX
+		if currentRecord.Prefix == prevRecord.Prefix &&
+			currentRecord.Base == prevRecord.Base &&
+			currentRecord.Suffix != prevRecord.Suffix {
+			return "SUFFIX_CHANGED"
+		}
+
+		// Same PREFIX and SUFFIX, different BASE
+		if currentRecord.Prefix == prevRecord.Prefix &&
+			currentRecord.Suffix == prevRecord.Suffix &&
+			currentRecord.Base != prevRecord.Base {
+			return "BASE_CHANGED"
+		}
+
+		// Same BASE and SUFFIX, different PREFIX
+		if currentRecord.Base == prevRecord.Base &&
+			currentRecord.Suffix == prevRecord.Suffix &&
+			currentRecord.Prefix != prevRecord.Prefix {
+			return "PREFIX_CHANGED"
+		}
+	}
+
+	return "" // No component change found
+}
+
+// Get the old part name that corresponds to the component change
+func getOldPartForChange(currentRecord VPLRecord, previousParts map[string]VPLRecord, changeType string) string {
+	if previousParts == nil {
+		return ""
+	}
+
+	for _, prevRecord := range previousParts {
+		switch changeType {
+		case "SUFFIX_CHANGED":
+			if currentRecord.Prefix == prevRecord.Prefix && currentRecord.Base == prevRecord.Base {
+				return prevRecord.PartName
+			}
+		case "BASE_CHANGED":
+			if currentRecord.Prefix == prevRecord.Prefix && currentRecord.Suffix == prevRecord.Suffix {
+				return prevRecord.PartName
+			}
+		case "PREFIX_CHANGED":
+			if currentRecord.Base == prevRecord.Base && currentRecord.Suffix == prevRecord.Suffix {
+				return prevRecord.PartName
+			}
+		}
+	}
+
+	return ""
+}
+
+// Check if a part was modified (component change) rather than completely removed
+func isPartModified(removedRecord VPLRecord, currentParts map[string]VPLRecord) bool {
+	if currentParts == nil {
+		return false
+	}
+
+	for _, currRecord := range currentParts {
+		// Check if any current part shares components with removed part
+		sameComponents := 0
+		if removedRecord.Prefix == currRecord.Prefix {
+			sameComponents++
+		}
+		if removedRecord.Base == currRecord.Base {
+			sameComponents++
+		}
+		if removedRecord.Suffix == currRecord.Suffix {
+			sameComponents++
+		}
+
+		// If 2 out of 3 components match, it's a modification
+		if sameComponents >= 2 {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Get component name for display
+func getComponentName(changeType string) string {
+	switch changeType {
+	case "PREFIX_CHANGED":
+		return "PREFIX"
+	case "BASE_CHANGED":
+		return "BASE"
+	case "SUFFIX_CHANGED":
+		return "SUFFIX"
+	default:
+		return "UNKNOWN"
+	}
+}
+
+// Update types.go - add new issue types
+
+// Update frontend conversion function
 
 func checkMissingRequiredParts(date string, vplRecords []VPLRecord) []VPLIssue {
 	var issues []VPLIssue
@@ -1842,10 +1974,10 @@ func main() {
 // VPL Analysis handler
 func handleVPLAnalysis(w http.ResponseWriter, r *http.Request) {
 	date := strings.TrimPrefix(r.URL.Path, "/api/analysis/")
-	log.Printf("🔍 VPL Analysis requested for date: %s", date) // DEBUG ekleyin
+	log.Printf("🔍 VPL Analysis requested for date: %s", date)
 
 	if date == "" || !validateInput(date) {
-		log.Printf("❌ Invalid date parameter: %s", date) // DEBUG ekleyin
+		log.Printf("❌ Invalid date parameter: %s", date)
 		sendError(w, "Invalid date parameter", http.StatusBadRequest)
 		return
 	}
@@ -1853,40 +1985,46 @@ func handleVPLAnalysis(w http.ResponseWriter, r *http.Request) {
 	// VPL summary'yi al
 	summary, err := getVPLAnalysisSummary(date)
 	if err != nil {
-		log.Printf("❌ getVPLAnalysisSummary error: %v", err) // DEBUG ekleyin
+		log.Printf("❌ getVPLAnalysisSummary error: %v", err)
 		sendError(w, "Analysis not found", http.StatusNotFound)
 		return
 	}
 
-	log.Printf("✅ VPL Summary found: Issues=%d", summary.IssuesFound) // DEBUG ekleyin
+	log.Printf("✅ VPL Summary found: Issues=%d", summary.IssuesFound)
 
-	// ✅ GERÇEK VPL ISSUES'LARI AL (boş array yerine)
-	vplIssues, total, err := getVPLIssues(date, 1, 9000000) // İlk 1000 issue'yu al
+	// ✅ GERÇEK VPL ISSUES'LARI AL
+	vplIssues, total, err := getVPLIssues(date, 1, 100000) // Tüm issues'ları al
 	if err != nil {
-		log.Printf("❌ getVPLIssues error: %v", err) // DEBUG ekleyin
-		vplIssues = []VPLIssueDetail{}              // Hata varsa boş array
+		log.Printf("❌ getVPLIssues error: %v", err)
+		vplIssues = []VPLIssueDetail{}
 	} else {
-		log.Printf("✅ Found %d VPL issues (total: %d)", len(vplIssues), total) // DEBUG ekleyin
+		log.Printf("✅ Found %d VPL issues (total: %d)", len(vplIssues), total)
 	}
 
-	// ✅ PART CHANGES'I VPL ISSUES'LARDAN OLUŞTUR
+	// ✅ PART CHANGES'İ VPL ISSUES'LARDAN OLUŞTUR
 	partChanges := convertVPLIssuesToPartChanges(vplIssues)
 	missingRequired := convertVPLIssuesToMissingRequired(vplIssues)
 
-	log.Printf("✅ Converted to %d part changes, %d missing required", len(partChanges), len(missingRequired)) // DEBUG ekleyin
+	log.Printf("✅ Converted to %d part changes, %d missing required", len(partChanges), len(missingRequired))
 
 	// Frontend'in beklediği format
 	analysisData := map[string]interface{}{
-		"part_changes":           partChanges,     // ✅ Gerçek veri
-		"missing_required_file2": missingRequired, // ✅ Gerçek veri
+		"part_changes":           partChanges,
+		"missing_required_file2": missingRequired,
 		"summary":                summary,
 	}
 
-	log.Printf("✅ Sending analysis data to frontend") // DEBUG ekleyin
+	log.Printf("✅ Sending analysis data to frontend")
+
+	// Response'u da logla
+	responseData := map[string]interface{}{"analysis": analysisData}
+	if len(partChanges) > 0 {
+		log.Printf("📤 Sample part change being sent: %+v", partChanges[0])
+	}
 
 	sendJSON(w, APIResponse{
 		Success: true,
-		Data:    map[string]interface{}{"analysis": analysisData},
+		Data:    responseData,
 	})
 }
 
@@ -1999,7 +2137,6 @@ func handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Masterdata reanalyze handler
 func handleMasterDataReanalyze(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -2021,64 +2158,168 @@ func handleMasterDataReanalyze(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Şu an için sadece başarılı response dön (gerçek masterdata analizi eklenene kadar)
-	sendJSON(w, APIResponse{
-		Success: true,
-		Message: "Masterdata reanalysis completed",
-	})
+
 }
 
 // VPL Issues'ları Part Changes formatına dönüştür
+// main.go'da convertVPLIssuesToPartChanges fonksiyonunu tamamen değiştirin:
+
 func convertVPLIssuesToPartChanges(issues []VPLIssueDetail) []map[string]interface{} {
-	changesMap := make(map[string]map[string]interface{})
+	log.Printf("🔄 Starting conversion with %d VPL issues", len(issues))
 
-	for _, issue := range issues {
-		if issue.IssueType == VPL_ISSUE_MISSING_REQ {
-			continue // Missing required ayrı işlenecek
-		}
+	if len(issues) == 0 {
+		log.Printf("⚠️ No issues to convert")
+		return []map[string]interface{}{}
+	}
 
-		var key string
-		var changeType string
-		var oldPart, newPart string
+	// Group changes by unique combination
+	changeGroups := make(map[string]*ChangeGroup)
 
-		switch issue.IssueType {
-		case VPL_ISSUE_ADDED:
-			key = issue.NewPart
-			changeType = "PART_ADDED"
-			newPart = issue.NewPart
-		case VPL_ISSUE_REMOVED:
-			key = issue.OldPart
-			changeType = "PART_REMOVED"
-			oldPart = issue.OldPart
-		case VPL_ISSUE_CHANGED:
-			key = issue.OldPart + "->" + issue.NewPart
-			changeType = "PART_CHANGED"
-			oldPart = issue.OldPart
-			newPart = issue.NewPart
-		default:
+	for i, issue := range issues {
+		log.Printf("🔍 Processing issue %d: Type='%s', VIN='%s', Old='%s', New='%s', Missing='%s'",
+			i, issue.IssueType, issue.VIN, issue.OldPart, issue.NewPart, issue.MissingPart)
+
+		// Skip missing required parts - they are handled separately
+		if issue.IssueType == "MISSING_REQUIRED" {
+			log.Printf("  ⏭️ Skipping missing required")
 			continue
 		}
 
-		if changesMap[key] == nil {
-			changesMap[key] = map[string]interface{}{
-				"change_type":    changeType,
-				"old_part_name":  oldPart,
-				"new_part_name":  newPart,
-				"affected_vins":  []string{},
-				"affected_count": 0,
+		// Create change group
+		var group *ChangeGroup
+		var groupKey string
+
+		switch issue.IssueType {
+		case "ADDED":
+			groupKey = fmt.Sprintf("ADD_%s", issue.NewPart)
+			if changeGroups[groupKey] == nil {
+				changeGroups[groupKey] = &ChangeGroup{
+					ChangeType:   "PART_ADDED",
+					NewPartName:  issue.NewPart,
+					ChangeDetail: "Yeni part eklendi",
+					AffectedVins: []string{},
+				}
 			}
+			group = changeGroups[groupKey]
+
+		case "REMOVED":
+			groupKey = fmt.Sprintf("REM_%s", issue.OldPart)
+			if changeGroups[groupKey] == nil {
+				changeGroups[groupKey] = &ChangeGroup{
+					ChangeType:   "PART_REMOVED",
+					OldPartName:  issue.OldPart,
+					ChangeDetail: "Part kaldırıldı",
+					AffectedVins: []string{},
+				}
+			}
+			group = changeGroups[groupKey]
+
+		case "CHANGED":
+			groupKey = fmt.Sprintf("CHG_%s_TO_%s", issue.OldPart, issue.NewPart)
+			if changeGroups[groupKey] == nil {
+				changeGroups[groupKey] = &ChangeGroup{
+					ChangeType:   "PART_CHANGED",
+					OldPartName:  issue.OldPart,
+					NewPartName:  issue.NewPart,
+					ChangeDetail: "Part değişti",
+					AffectedVins: []string{},
+				}
+			}
+			group = changeGroups[groupKey]
+
+		case "PREFIX_CHANGED":
+			groupKey = fmt.Sprintf("PFX_%s_TO_%s", issue.OldPart, issue.NewPart)
+			if changeGroups[groupKey] == nil {
+				changeGroups[groupKey] = &ChangeGroup{
+					ChangeType:   "PREFIX_CHANGED",
+					OldPartName:  issue.OldPart,
+					NewPartName:  issue.NewPart,
+					ChangeDetail: "PREFIX değişti",
+					AffectedVins: []string{},
+				}
+			}
+			group = changeGroups[groupKey]
+
+		case "BASE_CHANGED":
+			groupKey = fmt.Sprintf("BASE_%s_TO_%s", issue.OldPart, issue.NewPart)
+			if changeGroups[groupKey] == nil {
+				changeGroups[groupKey] = &ChangeGroup{
+					ChangeType:   "BASE_CHANGED",
+					OldPartName:  issue.OldPart,
+					NewPartName:  issue.NewPart,
+					ChangeDetail: "BASE değişti",
+					AffectedVins: []string{},
+				}
+			}
+			group = changeGroups[groupKey]
+
+		case "SUFFIX_CHANGED":
+			groupKey = fmt.Sprintf("SUF_%s_TO_%s", issue.OldPart, issue.NewPart)
+			if changeGroups[groupKey] == nil {
+				changeGroups[groupKey] = &ChangeGroup{
+					ChangeType:   "SUFFIX_CHANGED",
+					OldPartName:  issue.OldPart,
+					NewPartName:  issue.NewPart,
+					ChangeDetail: "SUFFIX değişti",
+					AffectedVins: []string{},
+				}
+			}
+			group = changeGroups[groupKey]
+
+		default:
+			log.Printf("  ⚠️ Unknown issue type: '%s'", issue.IssueType)
+			continue
 		}
 
-		// VIN'i ekle
-		vins := changesMap[key]["affected_vins"].([]string)
-		vins = append(vins, issue.VIN)
-		changesMap[key]["affected_vins"] = vins
-		changesMap[key]["affected_count"] = len(vins)
+		// Add VIN to group if not already present
+		if group != nil {
+			vinExists := false
+			for _, existingVin := range group.AffectedVins {
+				if existingVin == issue.VIN {
+					vinExists = true
+					break
+				}
+			}
+
+			if !vinExists {
+				group.AffectedVins = append(group.AffectedVins, issue.VIN)
+				log.Printf("  ✅ Added VIN %s to group %s (total: %d)", issue.VIN, groupKey, len(group.AffectedVins))
+			} else {
+				log.Printf("  ⏭️ VIN %s already in group %s", issue.VIN, groupKey)
+			}
+		}
 	}
 
-	// Map'i slice'a dönüştür
+	// Convert groups to result format
 	var result []map[string]interface{}
-	for _, change := range changesMap {
-		result = append(result, change)
+
+	log.Printf("🎯 Converting %d groups to result format", len(changeGroups))
+
+	for groupKey, group := range changeGroups {
+		changeMap := map[string]interface{}{
+			"change_type":    group.ChangeType,
+			"old_part_name":  group.OldPartName,
+			"new_part_name":  group.NewPartName,
+			"change_detail":  group.ChangeDetail,
+			"affected_count": len(group.AffectedVins),
+			"affected_vins":  group.AffectedVins,
+		}
+
+		result = append(result, changeMap)
+
+		log.Printf("✅ Group %s: Type=%s, Count=%d",
+			groupKey, group.ChangeType, len(group.AffectedVins))
+	}
+
+	log.Printf("🎉 Conversion completed: %d issues → %d part changes", len(issues), len(result))
+
+	// Show first few results for debugging
+	for i, change := range result {
+		if i >= 3 { // Only show first 3
+			break
+		}
+		log.Printf("📋 Result %d: Type=%s, Old=%s, New=%s, Count=%d",
+			i, change["change_type"], change["old_part_name"], change["new_part_name"], change["affected_count"])
 	}
 
 	return result

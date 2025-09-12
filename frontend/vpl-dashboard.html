@@ -13,6 +13,142 @@
             padding: 0;
             box-sizing: border-box;
         }
+        /* Change Detail Styles - VPL Dashboard */
+.change-detail {
+    font-size: 10px;
+    margin-left: 8px;
+    font-style: italic;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+/* Added parts - Green theme */
+.change-detail.added {
+    background-color: #bbf7d0;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+/* Removed parts - Red theme */
+.change-detail.removed {
+    background-color: #fecaca;
+    color: #dc2626;
+    border: 1px solid #f87171;
+}
+
+/* PREFIX changes - Purple theme */
+.change-detail.prefix-change {
+    background-color: #e9d5ff;
+    color: #7c3aed;
+    border: 1px solid #c4b5fd;
+}
+
+/* BASE changes - Orange theme */
+.change-detail.base-change {
+    background-color: #fed7aa;
+    color: #ea580c;
+    border: 1px solid #fdba74;
+}
+
+/* SUFFIX changes - Blue theme */
+.change-detail.suffix-change {
+    background-color: #bfdbfe;
+    color: #2563eb;
+    border: 1px solid #93c5fd;
+}
+
+/* Default modified - Gray theme */
+.change-detail.modified {
+    background-color: #e5e7eb;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+/* Dark theme adjustments */
+.change-detail.prefix-change {
+    background-color: #581c87;
+    color: #e9d5ff;
+    border: 1px solid #7c3aed;
+}
+
+.change-detail.base-change {
+    background-color: #9a3412;
+    color: #fed7aa;
+    border: 1px solid #ea580c;
+}
+
+.change-detail.suffix-change {
+    background-color: #1e40af;
+    color: #bfdbfe;
+    border: 1px solid #2563eb;
+}
+
+.change-detail.added {
+    background-color: #166534;
+    color: #bbf7d0;
+    border: 1px solid #22c55e;
+}
+
+.change-detail.removed {
+    background-color: #991b1b;
+    color: #fecaca;
+    border: 1px solid #ef4444;
+}
+
+.change-detail.modified {
+    background-color: #374151;
+    color: #e5e7eb;
+    border: 1px solid #6b7280;
+}
+
+/* Modal'da da aynı stilleri kullan */
+.modal-title .change-detail {
+    font-size: 12px;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+/* Change type badge'leri için de güzel renkler */
+.change-type {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.change-item.added .change-type {
+    background-color: #166534;
+    color: #bbf7d0;
+}
+
+.change-item.removed .change-type {
+    background-color: #991b1b;
+    color: #fecaca;
+}
+
+.change-item.modified .change-type {
+    background-color: #374151;
+    color: #e5e7eb;
+}
+
+/* Specific colors for component changes */
+.change-item[data-change-type="PREFIX_CHANGED"] .change-type {
+    background-color: #581c87;
+    color: #e9d5ff;
+}
+
+.change-item[data-change-type="BASE_CHANGED"] .change-type {
+    background-color: #9a3412;
+    color: #fed7aa;
+}
+
+.change-item[data-change-type="SUFFIX_CHANGED"] .change-type {
+    background-color: #1e40af;
+    color: #bfdbfe;
+}
 
         body {
             font-family: 'Fira Code', monospace;
@@ -914,7 +1050,7 @@
 
         // Enhanced load analysis function
         
-// vpl-dashboard.html içindeki loadAnalysisForDate fonksiyonunu bulun ve değiştirin:
+// vpl-dashboard.html içindeki loadAnalysisForDate fonksiyonunu bulun ve Changerin:
 
 function loadAnalysisForDate(dateStr, callback) {
     console.log('🔍 Loading analysis for date:', dateStr);
@@ -922,12 +1058,15 @@ function loadAnalysisForDate(dateStr, callback) {
     // Update title
     updateAnalysisTitle(dateStr);
     
-    // Show loading state
+    // ✅ SADECE LOADING STATE - FAKE DATA YOK
     const changesContainer = document.getElementById('changesContainer');
     const missingContainer = document.getElementById('missingPartsContainer');
     
-    changesContainer.innerHTML = '<div class="loading">Analiz verisi yükleniyor...</div>';
-    missingContainer.innerHTML = '<div class="loading">Eksik parts yükleniyor...</div>';
+    changesContainer.innerHTML = '<div class="loading">Loading analysis data...</div>';
+    missingContainer.innerHTML = '<div class="loading">Loading missing parts...</div>';
+    
+    // ✅ FAKE DATA'YI TEMİZLE
+    currentAnalysisData = null; // Eski veriyi temizle
     
     // Clear active states
     document.querySelectorAll('.date-card, .selected-date-display').forEach(el => {
@@ -947,13 +1086,15 @@ function loadAnalysisForDate(dateStr, callback) {
             return response.json();
         })
         .then(data => {
-            console.log('📊 Response data:', data); // ✅ Bu satırı ekleyin
+            console.log('📊 Response data:', data);
             
             if (data.success && data.data && data.data.analysis) {
                 currentAnalysisData = data.data.analysis;
+                
+                // ✅ HEMEN GÖSTER - FAKE DATA KONTROLÜ YOK
                 updateAnalysisDisplay(data.data.analysis);
                 
-                // Set active state for appropriate date display
+                // Set active state
                 if (selectedCustomDate === dateStr) {
                     document.getElementById('selectedDateDisplay').classList.add('active');
                 } else {
@@ -962,13 +1103,13 @@ function loadAnalysisForDate(dateStr, callback) {
                 
                 console.log('✅ Analysis loaded successfully');
             } else {
-                console.error('❌ Invalid response structure:', data); // ✅ Bu satırı ekleyin
-                showErrorState('Bu tarih için analiz verisi bulunamadı: ' + dateStr);
+                console.error('❌ Invalid response structure:', data);
+                showErrorState('No analysis data found for this date: ' + dateStr);
             }
         })
         .catch(error => {
             console.error('❌ Analysis load error:', error);
-            showErrorState('Analiz verisi yüklenirken hata oluştu: ' + error.message);
+            showErrorState('Error loading analysis data: ' + error.message);
         })
         .finally(() => {
             if (callback) callback();
@@ -1104,55 +1245,125 @@ function loadAnalysisForDate(dateStr, callback) {
         }
 
         // Update analysis display with real data
-   function updateAnalysisDisplay(analysisData) {
-    console.log('🎯 Updating display with:', analysisData); // ✅ Bu satırı ekleyin
+function updateAnalysisDisplay(analysisData) {
+    console.log('🎯 Updating display with:', analysisData);
     
     if (!analysisData) {
         console.error('❌ analysisData is null or undefined');
         return;
     }
     
+    // ✅ DİREKT GÖSTER - FAZLA KONTROL YOK
     updatePartChanges(analysisData.part_changes || []);
     updateMissingParts(analysisData.missing_required_file2 || []);
 }
-        // Update part changes section
-        function updatePartChanges(partChanges) {
-            const container = document.getElementById('changesContainer');
-            
-            if (!partChanges || partChanges.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>🎉 Hiçbir parça değişikliği bulunamadı</h3>
-                        <p>Bu tarih aralığında herhangi bir parça değişikliği tespit edilmedi.</p>
-                    </div>
-                `;
-                return;
-            }
+    // vpl-dashboard.html'de getPartDisplay fonksiyonunu sadeleştirin:
 
-            const changesHtml = partChanges.map((change, index) => {
-                const changeClass = getChangeClass(change.change_type);
-                const partDisplay = getPartDisplay(change);
-                
-                return `
-                    <div class="change-item ${changeClass}">
-                        <div class="change-header">
-                            <div class="change-info">
-                                ${partDisplay}
-                                <span class="change-type">${change.change_type}</span>
-                                <span class="affected-count">${change.affected_count} VIN etkilendi</span>
-                            </div>
-                            <button class="details-btn" onclick="openPartChangesModal(${index}); event.stopPropagation();">
-                                Detayları Gör
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+function getPartDisplay(change) {
+    console.log('🖼️ Creating display for change:', change);
+    
+    const changeType = change.change_type;
+    
+    if (changeType === 'PART_ADDED') {
+        return `
+            <div class="part-transition">
+                <span class="new-part">${change.new_part_name || 'Unknown'}</span>
+            </div>
+        `;
+    } else if (changeType === 'PART_REMOVED') {
+        return `
+            <div class="part-transition">
+                <span class="old-part">${change.old_part_name || 'Unknown'}</span>
+            </div>
+        `;
+    } else {
+        // PREFIX_CHANGED, BASE_CHANGED, SUFFIX_CHANGED, PART_CHANGED
+        return `
+            <div class="part-transition">
+                <span class="old-part">${change.old_part_name || 'Unknown'}</span>
+                <span class="arrow">→</span>
+                <span class="new-part">${change.new_part_name || 'Unknown'}</span>
+            </div>
+        `;
+    }
+}
 
-            container.innerHTML = changesHtml;
+// updatePartChanges fonksiyonunda change-type kutucuğunu renklendir:
+
+function updatePartChanges(partChanges) {
+    console.log('🔄 updatePartChanges called with:', partChanges);
+    
+    const container = document.getElementById('changesContainer');
+    
+    if (!partChanges || !Array.isArray(partChanges) || partChanges.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>🎉 Hiçbir parça değişikliği bulunamadı</h3>
+                <p>Bu tarih aralığında herhangi bir parça değişikliği tespit edilmedi.</p>
+            </div>
+        `;
+        return;
+    }
+
+    console.log('✅ Processing', partChanges.length, 'part changes');
+
+    const changesHtml = partChanges.map((change, index) => {
+        const changeClass = getChangeClass(change.change_type);
+        const partDisplay = getPartDisplay(change);
+        
+        // Change type'ı Türkçe yap ve renk sınıfı belirle
+        let displayChangeType = '';
+        let changeTypeClass = 'modified';
+        
+        switch(change.change_type) {
+            case 'PREFIX_CHANGED':
+                displayChangeType = 'PREFIX CHANGE';
+                changeTypeClass = 'prefix-change';
+                break;
+            case 'BASE_CHANGED':
+                displayChangeType = 'BASE CHANGE';
+                changeTypeClass = 'base-change';
+                break;
+            case 'SUFFIX_CHANGED':
+                displayChangeType = 'SUFFIX CHANGE';
+                changeTypeClass = 'suffix-change';
+                break;
+            case 'PART_ADDED':
+                displayChangeType = 'PART ADDED';
+                changeTypeClass = 'added';
+                break;
+            case 'PART_REMOVED':
+                displayChangeType = 'PART REMOVED ';
+                changeTypeClass = 'removed';
+                break;
+            case 'PART_CHANGED':
+                displayChangeType = 'PART CHANGE';
+                changeTypeClass = 'modified';
+                break;
+            default:
+                displayChangeType = change.change_type;
+                changeTypeClass = 'modified';
         }
+        
+        return `
+            <div class="change-item ${changeClass}" data-change-type="${change.change_type}">
+                <div class="change-header">
+                    <div class="change-info">
+                        ${partDisplay}
+                        <span class="change-type ${changeTypeClass}">${displayChangeType}</span>
+                        <span class="affected-count">${change.affected_count || 0} VIN etkilendi</span>
+                    </div>
+                    <button class="details-btn" onclick="openPartChangesModal(${index}); event.stopPropagation();">
+                        Detayları Gör
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
 
-        // Update missing parts section
+    container.innerHTML = changesHtml;
+    console.log('✅ Part changes HTML updated with single colored badge');
+}
         function updateMissingParts(missingParts) {
             const container = document.getElementById('missingPartsContainer');
             
@@ -1184,38 +1395,44 @@ function loadAnalysisForDate(dateStr, callback) {
         }
 
         // Open Part Changes Modal
-        function openPartChangesModal(changeIndex) {
-            if (!currentAnalysisData || !currentAnalysisData.part_changes) return;
-            
-            const change = currentAnalysisData.part_changes[changeIndex];
-            const modal = document.getElementById('detailModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const searchInput = document.getElementById('searchInput');
-            
-            let titleText = '';
-            if (change.change_type === 'PART_ADDED') {
-                titleText = `Eklenen: ${change.new_part_name} (${change.affected_count} VIN)`;
-            } else if (change.change_type === 'PART_REMOVED') {
-                titleText = `Kaldırılan: ${change.old_part_name} (${change.affected_count} VIN)`;
-            } else {
-                titleText = `${change.old_part_name} → ${change.new_part_name} (${change.affected_count} VIN)`;
-            }
-            modalTitle.textContent = titleText;
-            
-            currentModalData = {
-                type: 'partChanges',
-                data: change.affected_vins || []
-            };
-            
-            searchInput.value = '';
-            searchInput.placeholder = '🔍 VIN ara (örn: ABC)...';
-            renderModalContent(currentModalData.data);
-            
-            searchInput.oninput = () => filterModalContent(searchInput.value);
-            modal.classList.add('show');
-        }
-
-        // Open Missing Parts Modal
+function openPartChangesModal(changeIndex) {
+    if (!currentAnalysisData || !currentAnalysisData.part_changes) return;
+    
+    const change = currentAnalysisData.part_changes[changeIndex];
+    const modal = document.getElementById('detailModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const searchInput = document.getElementById('searchInput');
+    
+    let titleText = '';
+    
+    if (change.change_type === 'PART_ADDED') {
+        titleText = `ADDED: ${change.new_part_name} (${change.affected_count} VIN)`;
+    } else if (change.change_type === 'PART_REMOVED') {
+        titleText = `REMOVED: ${change.old_part_name} (${change.affected_count} VIN)`;
+    } else if (change.change_type === 'PREFIX_CHANGED') {
+        titleText = `PREFIX Change: ${change.old_part_name} → ${change.new_part_name} (${change.affected_count} VIN)`;
+    } else if (change.change_type === 'BASE_CHANGED') {
+        titleText = `BASE Change: ${change.old_part_name} → ${change.new_part_name} (${change.affected_count} VIN)`;
+    } else if (change.change_type === 'SUFFIX_CHANGED') {
+        titleText = `SUFFIX Change: ${change.old_part_name} → ${change.new_part_name} (${change.affected_count} VIN)`;
+    } else {
+        titleText = `${change.old_part_name} → ${change.new_part_name} (${change.affected_count} VIN)`;
+    }
+    
+    modalTitle.textContent = titleText; // Sadece text, HTML yok
+    
+    currentModalData = {
+        type: 'partChanges',
+        data: change.affected_vins || []
+    };
+    
+    searchInput.value = '';
+    searchInput.placeholder = '🔍 VIN ara (örn: ABC)...';
+    renderModalContent(currentModalData.data);
+    
+    searchInput.oninput = () => filterModalContent(searchInput.value);
+    modal.classList.add('show');
+}
         function openMissingPartsModal(missingIndex) {
             if (!currentAnalysisData || !currentAnalysisData.missing_required_file2) return;
             
@@ -1315,39 +1532,55 @@ function loadAnalysisForDate(dateStr, callback) {
             document.body.removeChild(link);
         }
 
-        // Get CSS class for change type
         function getChangeClass(changeType) {
-            if (changeType === 'PART_ADDED') return 'added';
-            if (changeType === 'PART_REMOVED') return 'removed';
+    console.log('🎨 Getting class for change type:', changeType);
+    
+    switch(changeType) {
+        case 'PART_ADDED':
+            return 'added';
+        case 'PART_REMOVED':
+            return 'removed';
+        case 'PREFIX_CHANGED':
+        case 'BASE_CHANGED':
+        case 'SUFFIX_CHANGED':
+        case 'PART_CHANGED':
             return 'modified';
-        }
-
+        default:
+            console.warn('⚠️ Unknown change type:', changeType);
+            return 'modified';
+    }
+}
         // Get part display HTML
-        function getPartDisplay(change) {
-            if (change.change_type === 'PART_ADDED') {
-                return `
-                    <div class="part-transition">
-                        <span class="new-part">${change.new_part_name}</span>
-                    </div>
-                `;
-            } else if (change.change_type === 'PART_REMOVED') {
-                return `
-                    <div class="part-transition">
-                        <span class="old-part">${change.old_part_name}</span>
-                    </div>
-                `;
-            } else {
-                return `
-                    <div class="part-transition">
-                        <span class="old-part">${change.old_part_name}</span>
-                        <span class="arrow">→</span>
-                        <span class="new-part">${change.new_part_name}</span>
-                    </div>
-                `;
-            }
-        }
+       // vpl-dashboard.html'de getPartDisplay fonksiyonunu şu şekilde Changerin:
 
-        // Show error state
+function getPartDisplay(change) {
+    console.log('🖼️ Creating display for change:', change);
+    
+    const changeType = change.change_type;
+    
+    if (changeType === 'PART_ADDED') {
+        return `
+            <div class="part-transition">
+                <span class="new-part">${change.new_part_name || 'Unknown'}</span>
+            </div>
+        `;
+    } else if (changeType === 'PART_REMOVED') {
+        return `
+            <div class="part-transition">
+                <span class="old-part">${change.old_part_name || 'Unknown'}</span>
+            </div>
+        `;
+    } else {
+        // PREFIX_CHANGED, BASE_CHANGED, SUFFIX_CHANGED, PART_CHANGED
+        return `
+            <div class="part-transition">
+                <span class="old-part">${change.old_part_name || 'Unknown'}</span>
+                <span class="arrow">→</span>
+                <span class="new-part">${change.new_part_name || 'Unknown'}</span>
+            </div>
+        `;
+    }
+}
         function showErrorState(message) {
             const changesContainer = document.getElementById('changesContainer');
             const missingContainer = document.getElementById('missingPartsContainer');

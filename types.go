@@ -27,10 +27,6 @@ const (
 // Issue type constants
 const (
 	// VPL issue types
-	VPL_ISSUE_ADDED       = "ADDED"
-	VPL_ISSUE_REMOVED     = "REMOVED"
-	VPL_ISSUE_CHANGED     = "CHANGED"
-	VPL_ISSUE_MISSING_REQ = "MISSING_REQUIRED"
 
 	// Master data issue types
 	MD_ISSUE_TEI_NOT_FOUND  = "TEI_NOT_FOUND"
@@ -243,4 +239,25 @@ type FileInfo struct {
 	Date     string    `json:"date"`      // Extracted from filename
 	Size     int64     `json:"size"`
 	ModTime  time.Time `json:"mod_time"`
+}
+
+const (
+	// VPL issue types - existing
+	VPL_ISSUE_ADDED       = "ADDED"
+	VPL_ISSUE_REMOVED     = "REMOVED"
+	VPL_ISSUE_CHANGED     = "CHANGED" // Keep for backward compatibility
+	VPL_ISSUE_MISSING_REQ = "MISSING_REQUIRED"
+
+	// VPL component change types - new
+	VPL_ISSUE_PREFIX_CHANGED = "PREFIX_CHANGED"
+	VPL_ISSUE_BASE_CHANGED   = "BASE_CHANGED"
+	VPL_ISSUE_SUFFIX_CHANGED = "SUFFIX_CHANGED"
+)
+
+type ChangeGroup struct {
+	ChangeType   string   `json:"change_type"`
+	OldPartName  string   `json:"old_part_name"`
+	NewPartName  string   `json:"new_part_name"`
+	ChangeDetail string   `json:"change_detail"`
+	AffectedVins []string `json:"affected_vins"`
 }
