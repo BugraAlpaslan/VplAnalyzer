@@ -13,142 +13,6 @@
             padding: 0;
             box-sizing: border-box;
         }
-        /* Change Detail Styles - VPL Dashboard */
-.change-detail {
-    font-size: 10px;
-    margin-left: 8px;
-    font-style: italic;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-weight: 500;
-}
-
-/* Added parts - Green theme */
-.change-detail.added {
-    background-color: #bbf7d0;
-    color: #15803d;
-    border: 1px solid #86efac;
-}
-
-/* Removed parts - Red theme */
-.change-detail.removed {
-    background-color: #fecaca;
-    color: #dc2626;
-    border: 1px solid #f87171;
-}
-
-/* PREFIX changes - Purple theme */
-.change-detail.prefix-change {
-    background-color: #e9d5ff;
-    color: #7c3aed;
-    border: 1px solid #c4b5fd;
-}
-
-/* BASE changes - Orange theme */
-.change-detail.base-change {
-    background-color: #fed7aa;
-    color: #ea580c;
-    border: 1px solid #fdba74;
-}
-
-/* SUFFIX changes - Blue theme */
-.change-detail.suffix-change {
-    background-color: #bfdbfe;
-    color: #2563eb;
-    border: 1px solid #93c5fd;
-}
-
-/* Default modified - Gray theme */
-.change-detail.modified {
-    background-color: #e5e7eb;
-    color: #374151;
-    border: 1px solid #d1d5db;
-}
-
-/* Dark theme adjustments */
-.change-detail.prefix-change {
-    background-color: #581c87;
-    color: #e9d5ff;
-    border: 1px solid #7c3aed;
-}
-
-.change-detail.base-change {
-    background-color: #9a3412;
-    color: #fed7aa;
-    border: 1px solid #ea580c;
-}
-
-.change-detail.suffix-change {
-    background-color: #1e40af;
-    color: #bfdbfe;
-    border: 1px solid #2563eb;
-}
-
-.change-detail.added {
-    background-color: #166534;
-    color: #bbf7d0;
-    border: 1px solid #22c55e;
-}
-
-.change-detail.removed {
-    background-color: #991b1b;
-    color: #fecaca;
-    border: 1px solid #ef4444;
-}
-
-.change-detail.modified {
-    background-color: #374151;
-    color: #e5e7eb;
-    border: 1px solid #6b7280;
-}
-
-/* Modal'da da aynı stilleri kullan */
-.modal-title .change-detail {
-    font-size: 12px;
-    margin-left: 10px;
-    vertical-align: middle;
-}
-
-/* Change type badge'leri için de güzel renkler */
-.change-type {
-    font-size: 10px;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 3px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.change-item.added .change-type {
-    background-color: #166534;
-    color: #bbf7d0;
-}
-
-.change-item.removed .change-type {
-    background-color: #991b1b;
-    color: #fecaca;
-}
-
-.change-item.modified .change-type {
-    background-color: #374151;
-    color: #e5e7eb;
-}
-
-/* Specific colors for component changes */
-.change-item[data-change-type="PREFIX_CHANGED"] .change-type {
-    background-color: #581c87;
-    color: #e9d5ff;
-}
-
-.change-item[data-change-type="BASE_CHANGED"] .change-type {
-    background-color: #9a3412;
-    color: #fed7aa;
-}
-
-.change-item[data-change-type="SUFFIX_CHANGED"] .change-type {
-    background-color: #1e40af;
-    color: #bfdbfe;
-}
 
         body {
             font-family: 'Fira Code', monospace;
@@ -192,13 +56,20 @@
             cursor: pointer;
             font-size: 12px;
             font-family: 'Fira Code', monospace;
+            transition: background-color 0.2s ease;
         }
 
         .header-btn:hover {
             background-color: #2a2a2a;
         }
 
-        /* Left Sidebar - Enhanced with Date Picker */
+        .header-btn:disabled {
+            background-color: #1a1a1a;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        /* Left Sidebar */
         .sidebar {
             grid-column: 1 / 2;
             background-color: #111111;
@@ -283,6 +154,7 @@
             cursor: pointer;
             font-size: 11px;
             padding: 2px;
+            transition: all 0.2s ease;
         }
 
         .reanalyze-btn:hover {
@@ -290,7 +162,7 @@
             background-color: #2a2a2a;
         }
 
-        /* Custom Date Picker Section */
+        /* Custom Date Section */
         .custom-date-section {
             margin-bottom: 20px;
         }
@@ -342,6 +214,7 @@
             font-weight: 600;
             cursor: pointer;
             margin-bottom: 8px;
+            transition: background-color 0.2s ease;
         }
 
         .load-date-btn:hover {
@@ -414,6 +287,7 @@
             cursor: pointer;
             font-size: 11px;
             padding: 2px;
+            transition: all 0.2s ease;
         }
 
         .custom-reanalyze-btn:hover {
@@ -421,7 +295,7 @@
             background-color: #fb923c;
         }
 
-        /* Main Content Area - WITH WATERMARK */
+        /* Main Content Area */
         .main-content {
             grid-column: 2 / 6;
             background-color: #131313;
@@ -431,7 +305,7 @@
             position: relative;
         }
 
-        /* WATERMARK LOGO */
+        /* Watermark */
         .main-content::before {
             content: 'MSAS VPL ANALYZER';
             position: absolute;
@@ -449,7 +323,6 @@
             letter-spacing: 6px;
         }
 
-        /* Make sure content is above watermark */
         .main-content > * {
             position: relative;
             z-index: 1;
@@ -475,6 +348,7 @@
             border: 1px solid #2a2a2a;
             padding: 15px;
             position: relative;
+            transition: background-color 0.2s ease;
         }
 
         .change-item:hover {
@@ -506,6 +380,78 @@
             gap: 15px;
         }
 
+        .part-transition {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .old-part {
+            background-color: #991b1b;
+            color: #fecaca;
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 2px;
+        }
+
+        .new-part {
+            background-color: #166534;
+            color: #bbf7d0;
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 2px;
+        }
+
+        .arrow {
+            color: #777;
+            font-size: 12px;
+        }
+
+        .change-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .change-badge.added {
+            background-color: #166534;
+            color: #bbf7d0;
+        }
+
+        .change-badge.removed {
+            background-color: #991b1b;
+            color: #fecaca;
+        }
+
+        .change-badge.prefix-changed {
+            background-color: #581c87;
+            color: #e9d5ff;
+        }
+
+        .change-badge.base-changed {
+            background-color: #9a3412;
+            color: #fed7aa;
+        }
+
+        .change-badge.suffix-changed {
+            background-color: #1e40af;
+            color: #bfdbfe;
+        }
+
+        .change-badge.modified {
+            background-color: #374151;
+            color: #e5e7eb;
+        }
+
+        .affected-count {
+            color: #777;
+            font-size: 11px;
+        }
+
         .details-btn {
             background-color: #2a2a2a;
             color: #e0e0e0;
@@ -515,49 +461,11 @@
             font-family: 'Fira Code', monospace;
             cursor: pointer;
             white-space: nowrap;
+            transition: background-color 0.2s ease;
         }
 
         .details-btn:hover {
             background-color: #444;
-        }
-
-        .part-transition {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-        }
-
-        .old-part {
-            background-color: #fecaca;
-            color: #dc2626;
-            padding: 4px 8px;
-            font-size: 11px;
-        }
-
-        .new-part {
-            background-color: #bbf7d0;
-            color: #16a34a;
-            padding: 4px 8px;
-            font-size: 11px;
-        }
-
-        .arrow {
-            color: #777;
-            font-size: 12px;
-        }
-
-        .change-type {
-            background-color: #bfdbfe;
-            color: #2563eb;
-            padding: 2px 8px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-
-        .affected-count {
-            color: #777;
-            font-size: 11px;
         }
 
         /* Right Sidebar */
@@ -609,6 +517,7 @@
             margin-bottom: 8px;
             cursor: pointer;
             position: relative;
+            transition: background-color 0.2s ease;
         }
 
         .missing-item:hover {
@@ -625,21 +534,6 @@
             flex: 1;
         }
 
-        .missing-details-btn {
-            background-color: #2a2a2a;
-            color: #e0e0e0;
-            border: 1px solid #444;
-            padding: 4px 8px;
-            font-size: 9px;
-            font-family: 'Fira Code', monospace;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .missing-details-btn:hover {
-            background-color: #444;
-        }
-
         .missing-part {
             font-weight: 600;
             color: #f87171;
@@ -652,10 +546,38 @@
             margin-top: 2px;
         }
 
+        .missing-details-btn {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 4px 8px;
+            font-size: 9px;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background-color 0.2s ease;
+        }
+
+        .missing-details-btn:hover {
+            background-color: #444;
+        }
+
+        /* States */
         .loading {
             text-align: center;
             padding: 40px;
             color: #777;
+            font-size: 12px;
+        }
+
+        .loading .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #2a2a2a;
+            border-top: 2px solid #4ade80;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
         }
 
         .empty-state {
@@ -671,6 +593,22 @@
         }
 
         .empty-state p {
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #f87171;
+        }
+
+        .error-state h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .error-state p {
             font-size: 11px;
             line-height: 1.4;
         }
@@ -726,6 +664,7 @@
             font-size: 20px;
             cursor: pointer;
             padding: 5px;
+            transition: color 0.2s ease;
         }
 
         .close-btn:hover {
@@ -779,6 +718,7 @@
             font-size: 12px;
             font-family: 'Fira Code', monospace;
             cursor: pointer;
+            transition: background-color 0.2s ease;
         }
 
         .export-btn:hover {
@@ -799,17 +739,11 @@
             color: #e0e0e0;
             text-align: center;
             font-weight: 500;
+            transition: background-color 0.2s ease;
         }
 
         .vin-tag:hover {
             background-color: #2f2f2f;
-        }
-
-        .no-results {
-            text-align: center;
-            color: #777;
-            padding: 40px;
-            font-size: 12px;
         }
 
         .results-count {
@@ -820,14 +754,24 @@
             border-bottom: 1px solid #2a2a2a;
         }
 
-        /* Animation for spinning */
+        /* Animations */
         @keyframes spin {
-            0% { transform: translateY(-50%) rotate(0deg); }
-            100% { transform: translateY(-50%) rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .change-item {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Spinning animation for reanalyze buttons */
         .spinning {
-            animation: spin 1s infinite linear;
+            animation: spin 1s linear infinite;
         }
     </style>
 </head>
@@ -838,8 +782,8 @@
             <h1>MSAS VPL Analyzer</h1>
         </div>
         <div class="header-buttons">
-            <button class="header-btn" onclick="openConfig()">Config</button>
-            <button class="header-btn" onclick="manualAnalysis()">Manuel Analiz</button>
+            <button class="header-btn" onclick="App.openConfig()">Config</button>
+            <button class="header-btn" id="manualAnalysisBtn" onclick="App.triggerManualAnalysis()">Manuel Analiz</button>
         </div>
     </div>
 
@@ -847,15 +791,13 @@
     <div class="sidebar">
         <div class="welcome-section">
             <div class="welcome-text">Welcome,</div>
-            <div class="username" id="currentUser">Admin</div>
+            <div class="username">Admin</div>
         </div>
         
         <!-- Recent Dates Section -->
         <div class="recent-dates-section">
             <div class="section-header">📅 Son 4 Gün</div>
-            <div id="dateCards">
-                <!-- Dynamic date cards will be generated (only 4) -->
-            </div>
+            <div id="dateCards"></div>
         </div>
 
         <!-- Custom Date Picker Section -->
@@ -863,19 +805,18 @@
             <div class="section-header">🗓️ Özel Tarih Seç</div>
             <div class="date-picker-container">
                 <label class="date-picker-label" for="customDate">Analiz Tarihi:</label>
-                <input type="date" id="customDate" class="date-input" max="">
-                <button class="load-date-btn" id="loadDateBtn" onclick="loadCustomDate()">
+                <input type="date" id="customDate" class="date-input">
+                <button class="load-date-btn" id="loadDateBtn" onclick="App.loadCustomDate()">
                     📊 Analizi Yükle
                 </button>
             </div>
             
-            <!-- Selected Custom Date Display -->
             <div class="selected-date-container" id="selectedDateContainer">
                 <div class="selected-date-label">Seçili Özel Tarih:</div>
-                <div class="selected-date-display" id="selectedDateDisplay" onclick="loadSelectedCustomDate()">
-                    <div class="selected-date-text" id="selectedDateText">15 Ocak 2024</div>
+                <div class="selected-date-display" id="selectedDateDisplay" onclick="App.loadSelectedCustomDate()">
+                    <div class="selected-date-text" id="selectedDateText"></div>
                     <div class="selected-date-subtitle">Analiz için tıklayın</div>
-                    <button class="custom-reanalyze-btn" onclick="event.stopPropagation(); reanalyzeCustomDate()">↻</button>
+                    <button class="custom-reanalyze-btn" onclick="event.stopPropagation(); App.reanalyzeCustomDate()">↻</button>
                 </div>
             </div>
         </div>
@@ -884,11 +825,14 @@
     <!-- Main Content Area -->
     <div class="main-content">
         <div class="content-title" id="analysisTitle">
-            Parça Değişiklikleri - Analiz Yükleniyor...
+            MSAS VPL Analyzer - Hoş Geldiniz
         </div>
         
         <div class="changes-container" id="changesContainer">
-            <div class="loading">🔍 En son analiz verisi aranıyor...</div>
+            <div class="loading">
+                <div class="spinner"></div>
+                En son analiz verisi aranıyor...
+            </div>
         </div>
     </div>
 
@@ -900,7 +844,10 @@
             </div>
             
             <div id="missingPartsContainer">
-                <div class="loading">📊 Analiz verisi yükleniyor...</div>
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Analiz verisi yükleniyor...
+                </div>
             </div>
         </div>
     </div>
@@ -910,787 +857,1435 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title" id="modalTitle">Detaylar</h3>
-                <button class="close-btn" onclick="closeModal()">✕</button>
+                <button class="close-btn" onclick="ModalComponent.hide()">✕</button>
             </div>
             <div class="modal-filters">
                 <input type="text" class="filter-input" id="searchInput" placeholder="🔍 VIN ara (örn: ABC)...">
             </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Dynamic content -->
-            </div>
+            <div class="modal-body" id="modalBody"></div>
             <div class="modal-footer">
                 <div class="results-count" id="resultsCount">Toplam: 0 sonuç</div>
-                <button class="export-btn" onclick="exportModalData()">📥 CSV Export</button>
+                <button class="export-btn" onclick="ModalComponent.exportData()">📥 CSV Export</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Global variables
-        let currentAnalysisData = null;
-        let currentModalData = null;
-        let selectedCustomDate = null;
+        // ===============================================================================
+        // 1. UTILS & HELPERS MODULE
+        // ===============================================================================
 
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Dashboard initializing...');
-            
-            // Set max date for date picker to today
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('customDate').max = today;
-            
-            // Generate only 4 recent date cards
-            generateDateCards();
-            
-            // Auto-load latest available analysis
-            loadLatestAvailableAnalysis();
-            
-            // Set current user
-            document.getElementById('currentUser').textContent = 'Admin';
-            
-            // Setup modal event listeners
-            setupModalEventListeners();
-        });
-
-        // Generate only 4 recent date cards
-        function generateDateCards() {
-            const container = document.getElementById('dateCards');
-            const today = new Date();
-            
-            // Generate cards for last 4 days only
-            for (let i = 0; i < 4; i++) {
-                const date = new Date(today);
-                date.setDate(today.getDate() - i);
+        const DateUtils = {
+            formatTurkish(date) {
+                const months = [
+                    'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+                ];
                 
-                const dateStr = date.toISOString().split('T')[0];
-                const displayDate = formatDateTurkish(date);
+                const day = date.getDate();
+                const month = months[date.getMonth()];
+                const year = date.getFullYear();
                 
-                const previousDate = new Date(date);
-                previousDate.setDate(date.getDate() - 1);
-                const previousDisplayDate = formatDateTurkish(previousDate);
+                return `${day} ${month} ${year}`;
+            },
+
+            formatISO(date) {
+                const isoString = date.toISOString().split('T')[0];
+                console.log(`📅 formatISO: ${date.toDateString()} → ${isoString}`);
+                return isoString;
+            },
+
+            getDateRange(days) {
+                const dates = [];
+                const today = new Date();
                 
-                const cardHTML = `
-                    <div class="date-card" data-date="${dateStr}" onclick="loadAnalysis('${dateStr}')">
-                        <div class="date-text">${displayDate}</div>
-                        <div class="date-details">vs ${previousDisplayDate}</div>
-                        <button class="reanalyze-btn" onclick="event.stopPropagation(); reanalyze('${dateStr}')">↻</button>
-                    </div>
-                `;
-                
-                container.innerHTML += cardHTML;
-            }
-        }
-
-        // Load custom date analysis
-        function loadCustomDate() {
-            const dateInput = document.getElementById('customDate');
-            const selectedDate = dateInput.value;
-            
-            if (!selectedDate) {
-                alert('Lütfen bir tarih seçin');
-                return;
-            }
-            
-            console.log('📅 Loading custom date:', selectedDate);
-            
-            // Disable button and show loading
-            const loadBtn = document.getElementById('loadDateBtn');
-            const originalText = loadBtn.textContent;
-            loadBtn.textContent = '🔍 Yükleniyor...';
-            loadBtn.disabled = true;
-            
-            // Store selected custom date
-            selectedCustomDate = selectedDate;
-            
-            // Show selected date display
-            updateSelectedDateDisplay(selectedDate);
-            
-            // Load analysis for selected date
-            loadAnalysisForDate(selectedDate, () => {
-                // Reset button
-                loadBtn.textContent = originalText;
-                loadBtn.disabled = false;
-            });
-        }
-
-        // Update selected date display
-        function updateSelectedDateDisplay(dateStr) {
-            const container = document.getElementById('selectedDateContainer');
-            const display = document.getElementById('selectedDateDisplay');
-            const textElement = document.getElementById('selectedDateText');
-            
-            const displayDate = formatDateTurkish(new Date(dateStr));
-            textElement.textContent = displayDate;
-            
-            // Show the container
-            container.classList.add('show');
-            
-            // Mark as active if this is the currently loaded analysis
-            display.classList.add('active');
-            
-            // Remove active from other date cards
-            document.querySelectorAll('.date-card').forEach(card => {
-                card.classList.remove('active');
-            });
-        }
-
-        // Load selected custom date
-        function loadSelectedCustomDate() {
-            if (selectedCustomDate) {
-                loadAnalysisForDate(selectedCustomDate);
-            }
-        }
-
-        // Reanalyze custom date
-        function reanalyzeCustomDate() {
-            if (selectedCustomDate) {
-                reanalyze(selectedCustomDate);
-            }
-        }
-
-        // Enhanced load analysis function
-        
-// vpl-dashboard.html içindeki loadAnalysisForDate fonksiyonunu bulun ve Changerin:
-
-function loadAnalysisForDate(dateStr, callback) {
-    console.log('🔍 Loading analysis for date:', dateStr);
-    
-    // Update title
-    updateAnalysisTitle(dateStr);
-    
-    // ✅ SADECE LOADING STATE - FAKE DATA YOK
-    const changesContainer = document.getElementById('changesContainer');
-    const missingContainer = document.getElementById('missingPartsContainer');
-    
-    changesContainer.innerHTML = '<div class="loading">Loading analysis data...</div>';
-    missingContainer.innerHTML = '<div class="loading">Loading missing parts...</div>';
-    
-    // ✅ FAKE DATA'YI TEMİZLE
-    currentAnalysisData = null; // Eski veriyi temizle
-    
-    // Clear active states
-    document.querySelectorAll('.date-card, .selected-date-display').forEach(el => {
-        el.classList.remove('active');
-    });
-    
-    // Fetch analysis data
-    const apiUrl = `/api/analysis/${dateStr}`;
-    console.log('📡 Fetching:', apiUrl);
-    
-    fetch(apiUrl)
-        .then(response => {
-            console.log('📥 Response status:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('📊 Response data:', data);
-            
-            if (data.success && data.data && data.data.analysis) {
-                currentAnalysisData = data.data.analysis;
-                
-                // ✅ HEMEN GÖSTER - FAKE DATA KONTROLÜ YOK
-                updateAnalysisDisplay(data.data.analysis);
-                
-                // Set active state
-                if (selectedCustomDate === dateStr) {
-                    document.getElementById('selectedDateDisplay').classList.add('active');
-                } else {
-                    setActiveDateCard(dateStr);
+                for (let i = 0; i < days; i++) {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() - i);
+                    dates.push(date);
                 }
                 
-                console.log('✅ Analysis loaded successfully');
-            } else {
-                console.error('❌ Invalid response structure:', data);
-                showErrorState('No analysis data found for this date: ' + dateStr);
+                return dates;
+            },
+
+            isValidDate(dateStr) {
+                const date = new Date(dateStr);
+                return date instanceof Date && !isNaN(date);
             }
-        })
-        .catch(error => {
-            console.error('❌ Analysis load error:', error);
-            showErrorState('Error loading analysis data: ' + error.message);
-        })
-        .finally(() => {
-            if (callback) callback();
-        });
-}
+        };
 
+        const Validators = {
+            isValidAnalysis(data) {
+                return data && typeof data === 'object' && 
+                       (Array.isArray(data.part_changes) || Array.isArray(data.missing_required_file2));
+            },
 
-        // Original loadAnalysis function for date cards
-        function loadAnalysis(date) {
-            // Clear custom date selection if clicking on recent dates
-            if (selectedCustomDate && selectedCustomDate !== date) {
-                selectedCustomDate = null;
-                document.getElementById('selectedDateContainer').classList.remove('show');
-                document.getElementById('selectedDateDisplay').classList.remove('active');
+            isValidPartChange(change) {
+                return change && typeof change === 'object' && 
+                       change.change_type && 
+                       typeof change.affected_count === 'number' &&
+                       Array.isArray(change.affected_vins);
+            },
+
+            hasRealData(analysis) {
+                // Check if this is real analysis data vs fake/empty data
+                if (!analysis) return false;
+                
+                const hasPartChanges = analysis.part_changes && analysis.part_changes.length > 0;
+                const hasMissingParts = analysis.missing_required_file2 && analysis.missing_required_file2.length > 0;
+                
+                return hasPartChanges || hasMissingParts;
+            },
+
+            sanitizeInput(input) {
+                if (typeof input !== 'string') return '';
+                return input.trim().replace(/[<>]/g, '');
             }
-            
-            loadAnalysisForDate(date);
-        }
+        };
 
-        // Load latest available analysis automatically
-        function loadLatestAvailableAnalysis() {
-            console.log('🔍 Searching for latest available analysis...');
-            
-            // Show searching state
-            const changesContainer = document.getElementById('changesContainer');
-            const missingContainer = document.getElementById('missingPartsContainer');
-            
-            changesContainer.innerHTML = '<div class="loading">🔍 En son analiz verisi aranıyor...</div>';
-            missingContainer.innerHTML = '<div class="loading">📊 Analiz verisi yükleniyor...</div>';
-            
-            // Try to find analysis starting from today, going back 7 days
-            tryLoadAnalysisFromDate(0);
-        }
+        const DOMUtils = {
+            createElement(tag, className = '', content = '') {
+                const element = document.createElement(tag);
+                if (className) element.className = className;
+                if (content) element.innerHTML = content;
+                return element;
+            },
 
-        // Try to load analysis from X days ago
-        function tryLoadAnalysisFromDate(daysBack) {
-            if (daysBack >= 7) {
-                showNoAnalysisFoundState();
-                return;
+            clearElement(selector) {
+                const element = document.querySelector(selector);
+                if (element) element.innerHTML = '';
+                return element;
+            },
+
+            showElement(selector) {
+                const element = document.querySelector(selector);
+                if (element) element.style.display = 'block';
+                return element;
+            },
+
+            hideElement(selector) {
+                const element = document.querySelector(selector);
+                if (element) element.style.display = 'none';
+                return element;
             }
-            
-            const today = new Date();
-            const tryDate = new Date(today);
-            tryDate.setDate(today.getDate() - daysBack);
-            const dateStr = tryDate.toISOString().split('T')[0];
-            
-            console.log(`📅 Trying to load analysis for: ${dateStr} (${daysBack} days back)`);
-            
-            const apiUrl = `/api/analysis/${dateStr}`;
-            
-            fetch(apiUrl)
-                .then(response => {
+        };
+
+        // ===============================================================================
+        // 2. STATE MANAGEMENT MODULE
+        // ===============================================================================
+
+        const AppState = {
+            data: {
+                currentDate: null,
+                analysisData: null,
+                selectedCustomDate: null,
+                loading: false,
+                error: null
+            },
+
+            observers: new Map(),
+
+            // Setters
+            setCurrentDate(date) {
+                this.data.currentDate = date;
+                this.notify('currentDate', date);
+            },
+
+            setAnalysisData(data) {
+                this.data.analysisData = data;
+                this.notify('analysisData', data);
+            },
+
+            setSelectedCustomDate(date) {
+                this.data.selectedCustomDate = date;
+                this.notify('selectedCustomDate', date);
+            },
+
+            setLoading(status) {
+                this.data.loading = status;
+                this.notify('loading', status);
+            },
+
+            setError(error) {
+                this.data.error = error;
+                this.notify('error', error);
+            },
+
+            clearState() {
+                this.data = {
+                    currentDate: null,
+                    analysisData: null,
+                    selectedCustomDate: null,
+                    loading: false,
+                    error: null
+                };
+                this.notify('stateCleared', true);
+            },
+
+            // Getters
+            getCurrentAnalysis() {
+                return this.data.analysisData;
+            },
+
+            getCurrentDate() {
+                return this.data.currentDate;
+            },
+
+            getSelectedCustomDate() {
+                return this.data.selectedCustomDate;
+            },
+
+            isLoading() {
+                return this.data.loading;
+            },
+
+            hasError() {
+                return this.data.error !== null;
+            },
+
+            getError() {
+                return this.data.error;
+            },
+
+            // Observer Pattern
+            subscribe(key, callback) {
+                if (!this.observers.has(key)) {
+                    this.observers.set(key, []);
+                }
+                this.observers.get(key).push(callback);
+            },
+
+            unsubscribe(key, callback) {
+                if (this.observers.has(key)) {
+                    const callbacks = this.observers.get(key);
+                    const index = callbacks.indexOf(callback);
+                    if (index > -1) {
+                        callbacks.splice(index, 1);
+                    }
+                }
+            },
+
+            notify(key, data) {
+                if (this.observers.has(key)) {
+                    this.observers.get(key).forEach(callback => {
+                        try {
+                            callback(data);
+                        } catch (error) {
+                            console.error('Observer callback error:', error);
+                        }
+                    });
+                }
+            }
+        };
+
+        // ===============================================================================
+        // 3. API LAYER MODULE
+        // ===============================================================================
+
+        const APIClient = {
+            baseURL: '/api',
+
+            async fetchAnalysis(date) {
+                console.log('📡 Fetching analysis for date:', date);
+                
+                try {
+                    const response = await fetch(`${this.baseURL}/analysis/${date}`);
+                    
                     if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success && data.analysis) {
-                        console.log('✅ Found analysis for date:', dateStr);
-                        currentAnalysisData = data.analysis;
-                        updateAnalysisDisplay(data.analysis);
-                        setActiveDateCard(dateStr);
-                        updateAnalysisTitle(dateStr);
-                    } else {
-                        console.log(`❌ No analysis for ${dateStr}, trying next...`);
-                        setTimeout(() => tryLoadAnalysisFromDate(daysBack + 1), 200);
+                    
+                    const data = await response.json();
+                    console.log('📥 API Response:', data);
+                    
+                    return data;
+                } catch (error) {
+                    console.error('❌ API Error:', error);
+                    throw error;
+                }
+            },
+
+            async triggerManualAnalysis() {
+                console.log('🔨 Triggering manual analysis');
+                
+                try {
+                    const response = await fetch(`${this.baseURL}/vpl/analyze`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
-                })
-                .catch(error => {
-                    console.log(`❌ Error loading ${dateStr}:`, error.message);
-                    setTimeout(() => tryLoadAnalysisFromDate(daysBack + 1), 200);
+                    
+                    const data = await response.json();
+                    console.log('📥 Manual analysis response:', data);
+                    
+                    return data;
+                } catch (error) {
+                    console.error('❌ Manual analysis error:', error);
+                    throw error;
+                }
+            },
+
+            async reanalyzeDate(date) {
+                console.log('🔄 Reanalyzing date:', date);
+                
+                try {
+                    const response = await fetch(`${this.baseURL}/reanalyze`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ date })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('📥 Reanalyze response:', data);
+                    
+                    return data;
+                } catch (error) {
+                    console.error('❌ Reanalyze error:', error);
+                    throw error;
+                }
+            }
+        };
+
+        const ResponseNormalizer = {
+            normalizeAnalysis(rawResponse) {
+                console.log('🔄 Normalizing response:', rawResponse);
+                
+                if (!rawResponse.success || !rawResponse.data) {
+                    throw new Error('Invalid response format');
+                }
+                
+                const analysisData = rawResponse.data.analysis || rawResponse.data;
+                
+                return {
+                    partChanges: this.normalizePartChanges(analysisData.part_changes || []),
+                    missingRequired: this.normalizeMissingRequired(analysisData.missing_required_file2 || []),
+                    summary: analysisData.summary || {}
+                };
+            },
+
+            normalizePartChanges(changes) {
+                if (!Array.isArray(changes)) return [];
+                
+                return changes.map(change => ({
+                    type: change.change_type || 'UNKNOWN',
+                    oldPart: change.old_part || change.old_part_name || '',
+                    newPart: change.new_part || change.new_part_name || '',
+                    detail: change.change_detail || '',
+                    affectedCount: change.affected_count || 0,
+                    affectedVins: change.affected_vins || []
+                }));
+            },
+
+            normalizeMissingRequired(missing) {
+                console.log('🔄 Normalizing missing required:', missing);
+                console.log('🔄 Missing type:', typeof missing);
+                console.log('🔄 Missing is array:', Array.isArray(missing));
+                
+                if (!Array.isArray(missing)) {
+                    console.log('❌ Missing is not an array:', missing);
+                    return [];
+                }
+                
+                const normalized = missing.map((item, index) => {
+                    console.log(`🔄 Processing missing ${index}:`, item);
+                    console.log(`🔄 Missing keys:`, Object.keys(item));
+                    
+                    const result = {
+                        requiredBase: item.required_base || '',
+                        missingCount: item.missing_count || 0,
+                        missingVins: item.missing_vins || []
+                    };
+                    
+                    console.log(`✅ Normalized missing ${index}:`, result);
+                    return result;
                 });
-        }
-
-        // Set active date card
-        function setActiveDateCard(dateStr) {
-            document.querySelectorAll('.date-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            
-            // Find matching date card
-            document.querySelectorAll('.date-card').forEach(card => {
-                const cardDate = card.getAttribute('data-date');
-                if (cardDate === dateStr) {
-                    card.classList.add('active');
-                }
-            });
-        }
-
-        // Update analysis title with date
-        function updateAnalysisTitle(dateStr) {
-            const displayDate = formatDateTurkish(new Date(dateStr));
-            document.getElementById('analysisTitle').textContent = `Parça Değişiklikleri - ${displayDate}`;
-        }
-
-        // Show no analysis found state
-        function showNoAnalysisFoundState() {
-            const changesContainer = document.getElementById('changesContainer');
-            const missingContainer = document.getElementById('missingPartsContainer');
-            
-            changesContainer.innerHTML = `
-                <div class="empty-state">
-                    <h3>📁 Henüz analiz verisi yok</h3>
-                    <p>Son 7 gün içinde hiçbir VPL analizi bulunamadı.<br>
-                    VPL dosyalarını 'vpl_files' klasörüne yerleştirin ve 'Manuel Analiz' butonuna tıklayın.</p>
-                </div>
-            `;
-            
-            missingContainer.innerHTML = `
-                <div class="empty-state">
-                    <h3>⚠️ Veri Bulunamadı</h3>
-                    <p>Analiz edilmiş veri bulunmuyor</p>
-                </div>
-            `;
-            
-            document.getElementById('analysisTitle').textContent = 'Henüz Analiz Verisi Bulunmuyor';
-        }
-
-        // Setup modal event listeners
-        function setupModalEventListeners() {
-            document.getElementById('detailModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeModal();
-                }
-            });
-            
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeModal();
-                }
-            });
-        }
-
-        // Update analysis display with real data
-function updateAnalysisDisplay(analysisData) {
-    console.log('🎯 Updating display with:', analysisData);
-    
-    if (!analysisData) {
-        console.error('❌ analysisData is null or undefined');
-        return;
-    }
-    
-    // ✅ DİREKT GÖSTER - FAZLA KONTROL YOK
-    updatePartChanges(analysisData.part_changes || []);
-    updateMissingParts(analysisData.missing_required_file2 || []);
-}
-    // vpl-dashboard.html'de getPartDisplay fonksiyonunu sadeleştirin:
-
-function getPartDisplay(change) {
-    console.log('🖼️ Creating display for change:', change);
-    
-    const changeType = change.change_type;
-    
-    if (changeType === 'PART_ADDED') {
-        return `
-            <div class="part-transition">
-                <span class="new-part">${change.new_part_name || 'Unknown'}</span>
-            </div>
-        `;
-    } else if (changeType === 'PART_REMOVED') {
-        return `
-            <div class="part-transition">
-                <span class="old-part">${change.old_part_name || 'Unknown'}</span>
-            </div>
-        `;
-    } else {
-        // PREFIX_CHANGED, BASE_CHANGED, SUFFIX_CHANGED, PART_CHANGED
-        return `
-            <div class="part-transition">
-                <span class="old-part">${change.old_part_name || 'Unknown'}</span>
-                <span class="arrow">→</span>
-                <span class="new-part">${change.new_part_name || 'Unknown'}</span>
-            </div>
-        `;
-    }
-}
-
-// updatePartChanges fonksiyonunda change-type kutucuğunu renklendir:
-
-function updatePartChanges(partChanges) {
-    console.log('🔄 updatePartChanges called with:', partChanges);
-    
-    const container = document.getElementById('changesContainer');
-    
-    if (!partChanges || !Array.isArray(partChanges) || partChanges.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <h3>🎉 Hiçbir parça değişikliği bulunamadı</h3>
-                <p>Bu tarih aralığında herhangi bir parça değişikliği tespit edilmedi.</p>
-            </div>
-        `;
-        return;
-    }
-
-    console.log('✅ Processing', partChanges.length, 'part changes');
-
-    const changesHtml = partChanges.map((change, index) => {
-        const changeClass = getChangeClass(change.change_type);
-        const partDisplay = getPartDisplay(change);
-        
-        // Change type'ı Türkçe yap ve renk sınıfı belirle
-        let displayChangeType = '';
-        let changeTypeClass = 'modified';
-        
-        switch(change.change_type) {
-            case 'PREFIX_CHANGED':
-                displayChangeType = 'PREFIX CHANGE';
-                changeTypeClass = 'prefix-change';
-                break;
-            case 'BASE_CHANGED':
-                displayChangeType = 'BASE CHANGE';
-                changeTypeClass = 'base-change';
-                break;
-            case 'SUFFIX_CHANGED':
-                displayChangeType = 'SUFFIX CHANGE';
-                changeTypeClass = 'suffix-change';
-                break;
-            case 'PART_ADDED':
-                displayChangeType = 'PART ADDED';
-                changeTypeClass = 'added';
-                break;
-            case 'PART_REMOVED':
-                displayChangeType = 'PART REMOVED ';
-                changeTypeClass = 'removed';
-                break;
-            case 'PART_CHANGED':
-                displayChangeType = 'PART CHANGE';
-                changeTypeClass = 'modified';
-                break;
-            default:
-                displayChangeType = change.change_type;
-                changeTypeClass = 'modified';
-        }
-        
-        return `
-            <div class="change-item ${changeClass}" data-change-type="${change.change_type}">
-                <div class="change-header">
-                    <div class="change-info">
-                        ${partDisplay}
-                        <span class="change-type ${changeTypeClass}">${displayChangeType}</span>
-                        <span class="affected-count">${change.affected_count || 0} VIN etkilendi</span>
-                    </div>
-                    <button class="details-btn" onclick="openPartChangesModal(${index}); event.stopPropagation();">
-                        Detayları Gör
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    container.innerHTML = changesHtml;
-    console.log('✅ Part changes HTML updated with single colored badge');
-}
-        function updateMissingParts(missingParts) {
-            const container = document.getElementById('missingPartsContainer');
-            
-            if (!missingParts || missingParts.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>✅ Tüm required parts mevcut</h3>
-                        <p>Hiçbir required part eksik bulunmadı.</p>
-                    </div>
-                `;
-                return;
+                
+                console.log('✅ All normalized missing required:', normalized.length);
+                return normalized;
             }
+        };
 
-            const missingHtml = missingParts.map((missing, index) => `
-                <div class="missing-item">
-                    <div class="missing-header">
-                        <div class="missing-info">
-                            <div class="missing-part">${missing.required_base}</div>
-                            <div class="missing-count">${missing.missing_count} VIN'de bulunamadı</div>
+        // ===============================================================================
+        // 4. UI COMPONENTS MODULE
+        // ===============================================================================
+
+        const LoadingComponent = {
+            show(container, message = 'Loading...') {
+                const element = typeof container === 'string' ? 
+                    document.querySelector(container) : container;
+                
+                if (element) {
+                    element.innerHTML = `
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            ${message}
                         </div>
-                        <button class="missing-details-btn" onclick="openMissingPartsModal(${index}); event.stopPropagation();">
-                            Detayları Gör
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+                    `;
+                }
+            },
 
-            container.innerHTML = missingHtml;
-        }
+            hide(container) {
+                const element = typeof container === 'string' ? 
+                    document.querySelector(container) : container;
+                
+                if (element) {
+                    const loading = element.querySelector('.loading');
+                    if (loading) {
+                        loading.remove();
+                    }
+                }
+            },
 
-        // Open Part Changes Modal
-function openPartChangesModal(changeIndex) {
-    if (!currentAnalysisData || !currentAnalysisData.part_changes) return;
-    
-    const change = currentAnalysisData.part_changes[changeIndex];
-    const modal = document.getElementById('detailModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const searchInput = document.getElementById('searchInput');
-    
-    let titleText = '';
-    
-    if (change.change_type === 'PART_ADDED') {
-        titleText = `ADDED: ${change.new_part_name} (${change.affected_count} VIN)`;
-    } else if (change.change_type === 'PART_REMOVED') {
-        titleText = `REMOVED: ${change.old_part_name} (${change.affected_count} VIN)`;
-    } else if (change.change_type === 'PREFIX_CHANGED') {
-        titleText = `PREFIX Change: ${change.old_part_name} → ${change.new_part_name} (${change.affected_count} VIN)`;
-    } else if (change.change_type === 'BASE_CHANGED') {
-        titleText = `BASE Change: ${change.old_part_name} → ${change.new_part_name} (${change.affected_count} VIN)`;
-    } else if (change.change_type === 'SUFFIX_CHANGED') {
-        titleText = `SUFFIX Change: ${change.old_part_name} → ${change.new_part_name} (${change.affected_count} VIN)`;
-    } else {
-        titleText = `${change.old_part_name} → ${change.new_part_name} (${change.affected_count} VIN)`;
-    }
-    
-    modalTitle.textContent = titleText; // Sadece text, HTML yok
-    
-    currentModalData = {
-        type: 'partChanges',
-        data: change.affected_vins || []
-    };
-    
-    searchInput.value = '';
-    searchInput.placeholder = '🔍 VIN ara (örn: ABC)...';
-    renderModalContent(currentModalData.data);
-    
-    searchInput.oninput = () => filterModalContent(searchInput.value);
-    modal.classList.add('show');
-}
-        function openMissingPartsModal(missingIndex) {
-            if (!currentAnalysisData || !currentAnalysisData.missing_required_file2) return;
-            
-            const missing = currentAnalysisData.missing_required_file2[missingIndex];
-            const modal = document.getElementById('detailModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const searchInput = document.getElementById('searchInput');
-            
-            modalTitle.textContent = `Eksik Part: ${missing.required_base} (${missing.missing_count} VIN)`;
-            
-            currentModalData = {
-                type: 'missingParts',
-                data: missing.missing_vins || []
-            };
-            
-            searchInput.value = '';
-            searchInput.placeholder = '🔍 VIN ara (örn: ABC)...';
-            renderModalContent(currentModalData.data);
-            
-            searchInput.oninput = () => filterModalContent(searchInput.value);
-            modal.classList.add('show');
-        }
-
-        // Render modal content
-        function renderModalContent(vins) {
-            const modalBody = document.getElementById('modalBody');
-            const resultsCount = document.getElementById('resultsCount');
-            
-            if (!vins || vins.length === 0) {
-                modalBody.innerHTML = '<div class="no-results">Sonuç bulunamadı</div>';
-                resultsCount.textContent = 'Toplam: 0 sonuç';
-                return;
+            showWithProgress(container, progress, message = 'Loading...') {
+                const element = typeof container === 'string' ? 
+                    document.querySelector(container) : container;
+                
+                if (element) {
+                    element.innerHTML = `
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            ${message} (${progress}%)
+                        </div>
+                    `;
+                }
             }
-            
-            resultsCount.textContent = `Toplam: ${vins.length} sonuç`;
-            
-            const vinsHtml = vins.map(vin => `
-                <div class="vin-tag">${vin}</div>
-            `).join('');
-            
-            modalBody.innerHTML = `<div class="vin-grid">${vinsHtml}</div>`;
-        }
+        };
 
-        // Filter modal content
-        function filterModalContent(searchTerm) {
-            if (!currentModalData) return;
-            
-            const originalData = currentModalData.data;
-            
-            if (!searchTerm.trim()) {
-                renderModalContent(originalData);
-                return;
-            }
-            
-            const filteredVins = originalData.filter(vin => 
-                vin.toLowerCase().startsWith(searchTerm.toLowerCase())
-            );
-            
-            renderModalContent(filteredVins);
-        }
+        const ErrorComponent = {
+            show(container, message, type = 'error') {
+                const element = typeof container === 'string' ? 
+                    document.querySelector(container) : container;
+                
+                if (element) {
+                    element.innerHTML = `
+                        <div class="error-state">
+                            <h3>⚠️ ${type === 'error' ? 'Hata Oluştu' : 'Bilgi'}</h3>
+                            <p>${message}</p>
+                        </div>
+                    `;
+                }
+            },
 
-        // Close modal
-        function closeModal() {
-            document.getElementById('detailModal').classList.remove('show');
-            currentModalData = null;
-        }
+            showEmpty(container, title, message) {
+                const element = typeof container === 'string' ? 
+                    document.querySelector(container) : container;
+                
+                if (element) {
+                    element.innerHTML = `
+                        <div class="empty-state">
+                            <h3>${title}</h3>
+                            <p>${message}</p>
+                        </div>
+                    `;
+                }
+            },
 
-        // Export modal data
-        function exportModalData() {
-            if (!currentModalData) return;
-            
-            const data = currentModalData.data;
-            const searchInput = document.getElementById('searchInput');
-            const searchTerm = searchInput.value.trim();
-            
-            let exportData = data;
-            if (searchTerm) {
-                exportData = data.filter(vin => 
-                    vin.toLowerCase().startsWith(searchTerm.toLowerCase())
+            showNoData(container) {
+                this.showEmpty(container, 
+                    'MSAS VPL Analyzer, bir MSAS ürünüdür.',
+                    'Talep ve öneriler için: <a href="mailto:alpaslanbugra0@gmail.com">alpaslanbugra0@gmail.com'
                 );
             }
-            
-            if (exportData.length === 0) {
-                alert('Export edilecek veri bulunamadı');
-                return;
+        };
+
+        const PartChangesComponent = {
+            render(container, partChanges) {
+                console.log('🎨 Rendering part changes:', partChanges.length);
+                
+                const element = typeof container === 'string' ? 
+                    document.querySelector(container) : container;
+                
+                if (!element) return;
+                
+                if (!partChanges || partChanges.length === 0) {
+                    ErrorComponent.showEmpty(element,
+                        '🎉 Hiçbir parça değişikliği bulunamadı',
+                        'Bu tarih aralığında herhangi bir parça değişikliği tespit edilmedi.'
+                    );
+                    return;
+                }
+
+                const changesHtml = partChanges.map((change, index) => 
+                    this.renderChangeItem(change, index)
+                ).join('');
+
+                element.innerHTML = changesHtml;
+            },
+
+            renderChangeItem(change, index) {
+                const changeClass = this.getChangeClass(change.type);
+                const partTransition = this.renderPartTransition(change);
+                const changeBadge = this.renderChangeBadge(change);
+                
+                return `
+                    <div class="change-item ${changeClass}" data-change-type="${change.type}">
+                        <div class="change-header">
+                            <div class="change-info">
+                                ${partTransition}
+                                ${changeBadge}
+                                <span class="affected-count">${change.affectedCount} VIN etkilendi</span>
+                            </div>
+                            <button class="details-btn" onclick="EventHandler.onPartChangeClick(${index}); event.stopPropagation();">
+                                Detayları Gör
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            getChangeClass(type) {
+                switch(type) {
+                    case 'PART_ADDED':
+                        return 'added';
+                    case 'PART_REMOVED':
+                        return 'removed';
+                    case 'PREFIX_CHANGED':
+                    case 'BASE_CHANGED':
+                    case 'SUFFIX_CHANGED':
+                    case 'PART_CHANGED':
+                        return 'modified';
+                    default:
+                        return 'modified';
+                }
+            },
+
+            renderPartTransition(change) {
+                if (change.type === 'PART_ADDED') {
+                    return `
+                        <div class="part-transition">
+                            <span class="new-part">${change.newPart}</span>
+                        </div>
+                    `;
+                } else if (change.type === 'PART_REMOVED') {
+                    return `
+                        <div class="part-transition">
+                            <span class="old-part">${change.oldPart}</span>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="part-transition">
+                            <span class="old-part">${change.oldPart}</span>
+                            <span class="arrow">→</span>
+                            <span class="new-part">${change.newPart}</span>
+                        </div>
+                    `;
+                }
+            },
+
+            renderChangeBadge(change) {
+                let displayType = '';
+                let badgeClass = 'modified';
+                
+                switch(change.type) {
+                    case 'PREFIX_CHANGED':
+                        displayType = 'PREFIX CHANGE';
+                        badgeClass = 'prefix-changed';
+                        break;
+                    case 'BASE_CHANGED':
+                        displayType = 'BASE CHANGE';
+                        badgeClass = 'base-changed';
+                        break;
+                    case 'SUFFIX_CHANGED':
+                        displayType = 'SUFFIX CHANGE';
+                        badgeClass = 'suffix-changed';
+                        break;
+                    case 'PART_ADDED':
+                        displayType = 'PART ADDED';
+                        badgeClass = 'added';
+                        break;
+                    case 'PART_REMOVED':
+                        displayType = 'PART REMOVED';
+                        badgeClass = 'removed';
+                        break;
+                    case 'PART_CHANGED':
+                        displayType = 'PART CHANGE';
+                        badgeClass = 'modified';
+                        break;
+                    default:
+                        displayType = change.type;
+                        badgeClass = 'modified';
+                }
+                
+                return `<span class="change-badge ${badgeClass}">${displayType}</span>`;
             }
-            
-            const csvContent = 'VIN\n' + exportData.join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `vins_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+        };
 
-        function getChangeClass(changeType) {
-    console.log('🎨 Getting class for change type:', changeType);
-    
-    switch(changeType) {
-        case 'PART_ADDED':
-            return 'added';
-        case 'PART_REMOVED':
-            return 'removed';
-        case 'PREFIX_CHANGED':
-        case 'BASE_CHANGED':
-        case 'SUFFIX_CHANGED':
-        case 'PART_CHANGED':
-            return 'modified';
-        default:
-            console.warn('⚠️ Unknown change type:', changeType);
-            return 'modified';
-    }
-}
-        // Get part display HTML
-       // vpl-dashboard.html'de getPartDisplay fonksiyonunu şu şekilde Changerin:
-
-function getPartDisplay(change) {
-    console.log('🖼️ Creating display for change:', change);
-    
-    const changeType = change.change_type;
-    
-    if (changeType === 'PART_ADDED') {
-        return `
-            <div class="part-transition">
-                <span class="new-part">${change.new_part_name || 'Unknown'}</span>
-            </div>
-        `;
-    } else if (changeType === 'PART_REMOVED') {
-        return `
-            <div class="part-transition">
-                <span class="old-part">${change.old_part_name || 'Unknown'}</span>
-            </div>
-        `;
-    } else {
-        // PREFIX_CHANGED, BASE_CHANGED, SUFFIX_CHANGED, PART_CHANGED
-        return `
-            <div class="part-transition">
-                <span class="old-part">${change.old_part_name || 'Unknown'}</span>
-                <span class="arrow">→</span>
-                <span class="new-part">${change.new_part_name || 'Unknown'}</span>
-            </div>
-        `;
-    }
-}
-        function showErrorState(message) {
-            const changesContainer = document.getElementById('changesContainer');
-            const missingContainer = document.getElementById('missingPartsContainer');
-            
-            changesContainer.innerHTML = `
-                <div class="empty-state">
-                    <h3>⚠️ Veri Yüklenemedi</h3>
-                    <p>${message}</p>
-                </div>
-            `;
-            
-            missingContainer.innerHTML = `
-                <div class="empty-state">
-                    <h3>⚠️ Veri Yüklenemedi</h3>
-                    <p>Missing parts verisi yüklenemedi</p>
-                </div>
-            `;
-        }
-
-        // Reanalyze specific date
-        function reanalyze(date) {
-            const button = event.target;
-            const originalText = button.textContent;
-            
-            button.textContent = '⟳';
-            button.classList.add('spinning');
-            
-            fetch('/api/reanalyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ date: date })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadAnalysisForDate(date);
-                } else {
-                    alert('Yeniden analiz başarısız: ' + (data.message || 'Bilinmeyen hata'));
+        const MissingPartsComponent = {
+            render(container, missingParts) {
+                console.log('🎨 Rendering missing parts:', missingParts.length);
+                
+                const element = typeof container === 'string' ? 
+                    document.querySelector(container) : container;
+                
+                if (!element) return;
+                
+                if (!missingParts || missingParts.length === 0) {
+                    ErrorComponent.showEmpty(element,
+                        '✅ Tüm required parts mevcut',
+                        'Hiçbir required part eksik bulunmadı.'
+                    );
+                    return;
                 }
-            })
-            .catch(error => {
-                console.error('Reanalyze error:', error);
-                alert('Yeniden analiz sırasında bir hata oluştu');
-            })
-            .finally(() => {
-                button.textContent = originalText;
-                button.classList.remove('spinning');
-            });
-        }
 
-        // Open config page
-        function openConfig() {
-            window.location.href = '/config';
-        }
+                const missingHtml = missingParts.map((missing, index) => 
+                    this.renderMissingItem(missing, index)
+                ).join('');
 
-        // Trigger manual analysis
-        function manualAnalysis() {
-            const button = event.target;
-            const originalText = button.textContent;
-            
-            event.preventDefault();
-            console.log('🔨 Manual analysis triggered');
-            
-            button.textContent = 'Analiz Ediliyor...';
-            button.disabled = true;
-            
-            fetch('/api/vpl/analyze', { 
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => {
-                console.log('📥 Manual analysis response:', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('📊 Manual analysis result:', data);
-                if (data.success) {
-                    console.log('✅ Manual analysis completed');
+                element.innerHTML = missingHtml;
+            },
+
+            renderMissingItem(missing, index) {
+                return `
+                    <div class="missing-item">
+                        <div class="missing-header">
+                            <div class="missing-info">
+                                <div class="missing-part">${missing.requiredBase}</div>
+                                <div class="missing-count">${missing.missingCount} VIN'de bulunamadı</div>
+                            </div>
+                            <button class="missing-details-btn" onclick="EventHandler.onMissingPartClick(${index}); event.stopPropagation();">
+                                Detayları Gör
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        };
+
+        const DatePickerComponent = {
+            renderDateCards(container) {
+                const element = typeof container === 'string' ? 
+                    document.querySelector(container) : container;
+                
+                if (!element) return;
+                
+                const dates = DateUtils.getDateRange(4); // Last 4 days
+                
+                const cardsHtml = dates.map(date => {
+                    const dateStr = DateUtils.formatISO(date);
+                    const displayDate = DateUtils.formatTurkish(date);
+                    
+                    const previousDate = new Date(date);
+                    previousDate.setDate(date.getDate() - 1);
+                    const previousDisplayDate = DateUtils.formatTurkish(previousDate);
+                    
+                    return `
+                        <div class="date-card" data-date="${dateStr}" onclick="EventHandler.onDateCardClick('${dateStr}')">
+                            <div class="date-text">${displayDate}</div>
+                            <div class="date-details">vs ${previousDisplayDate}</div>
+                            <button class="reanalyze-btn" onclick="event.stopPropagation(); EventHandler.onReanalyzeClick('${dateStr}')">↻</button>
+                        </div>
+                    `;
+                }).join('');
+                
+                element.innerHTML = cardsHtml;
+            },
+
+            setActiveDate(date) {
+                // Remove active from all cards
+                document.querySelectorAll('.date-card').forEach(card => {
+                    card.classList.remove('active');
+                });
+                
+                // Set active on matching card
+                const targetCard = document.querySelector(`[data-date="${date}"]`);
+                if (targetCard) {
+                    targetCard.classList.add('active');
+                }
+            },
+
+            setupCustomDatePicker() {
+                const dateInput = document.getElementById('customDate');
+                if (dateInput) {
                     const today = new Date().toISOString().split('T')[0];
-                    setTimeout(() => {
-                        loadAnalysisForDate(today);
-                    }, 1000);
-                } else {
-                    console.error('❌ Manual analysis failed:', data.message);
-                    alert('Manuel analiz başarısız: ' + (data.message || 'Bilinmeyen hata'));
+                    dateInput.max = today;
                 }
-            })
-            .catch(error => {
-                console.error('❌ Manual analysis error:', error);
-                alert('Manuel analiz sırasında bir hata oluştu: ' + error.message);
-            })
-            .finally(() => {
-                button.textContent = originalText;
-                button.disabled = false;
+            },
+
+            showSelectedCustomDate(date) {
+                const container = document.getElementById('selectedDateContainer');
+                const textElement = document.getElementById('selectedDateText');
+                
+                if (container && textElement) {
+                    const displayDate = DateUtils.formatTurkish(new Date(date));
+                    textElement.textContent = displayDate;
+                    container.classList.add('show');
+                }
+            },
+
+            hideSelectedCustomDate() {
+                const container = document.getElementById('selectedDateContainer');
+                if (container) {
+                    container.classList.remove('show');
+                }
+            },
+
+            setActiveCustomDate(active = true) {
+                const display = document.getElementById('selectedDateDisplay');
+                if (display) {
+                    if (active) {
+                        display.classList.add('active');
+                    } else {
+                        display.classList.remove('active');
+                    }
+                }
+            }
+        };
+
+        const ModalComponent = {
+            currentData: null,
+
+            show(title, content, options = {}) {
+                const modal = document.getElementById('detailModal');
+                const modalTitle = document.getElementById('modalTitle');
+                const modalBody = document.getElementById('modalBody');
+                const searchInput = document.getElementById('searchInput');
+                
+                if (modal && modalTitle && modalBody) {
+                    modalTitle.textContent = title;
+                    modalBody.innerHTML = content;
+                    
+                    // Setup search
+                    if (searchInput) {
+                        searchInput.value = '';
+                        searchInput.placeholder = options.searchPlaceholder || '🔍 Ara...';
+                        searchInput.oninput = () => this.handleSearch(searchInput.value);
+                    }
+                    
+                    modal.classList.add('show');
+                }
+            },
+
+            hide() {
+                const modal = document.getElementById('detailModal');
+                if (modal) {
+                    modal.classList.remove('show');
+                }
+                this.currentData = null;
+            },
+
+            renderPartChangeModal(change) {
+                let titleText = '';
+                
+                if (change.type === 'PART_ADDED') {
+                    titleText = `ADDED: ${change.newPart} (${change.affectedCount} VIN)`;
+                } else if (change.type === 'PART_REMOVED') {
+                    titleText = `REMOVED: ${change.oldPart} (${change.affectedCount} VIN)`;
+                } else if (change.type === 'PREFIX_CHANGED') {
+                    titleText = `PREFIX Change: ${change.oldPart} → ${change.newPart} (${change.affectedCount} VIN)`;
+                } else if (change.type === 'BASE_CHANGED') {
+                    titleText = `BASE Change: ${change.oldPart} → ${change.newPart} (${change.affectedCount} VIN)`;
+                } else if (change.type === 'SUFFIX_CHANGED') {
+                    titleText = `SUFFIX Change: ${change.oldPart} → ${change.newPart} (${change.affectedCount} VIN)`;
+                } else {
+                    titleText = `${change.oldPart} → ${change.newPart} (${change.affectedCount} VIN)`;
+                }
+
+                this.currentData = {
+                    type: 'partChanges',
+                    data: change.affectedVins
+                };
+
+                const content = this.renderVinList(change.affectedVins);
+                this.show(titleText, content, { 
+                    searchPlaceholder: '🔍 VIN ara (örn: ABC)...' 
+                });
+            },
+
+            renderMissingPartModal(missing) {
+                const titleText = `Eksik Part: ${missing.requiredBase} (${missing.missingCount} VIN)`;
+                
+                this.currentData = {
+                    type: 'missingParts',
+                    data: missing.missingVins
+                };
+
+                const content = this.renderVinList(missing.missingVins);
+                this.show(titleText, content, { 
+                    searchPlaceholder: '🔍 VIN ara (örn: ABC)...' 
+                });
+            },
+
+            renderVinList(vins) {
+                if (!vins || vins.length === 0) {
+                    return '<div class="error-state"><h3>Sonuç bulunamadı</h3></div>';
+                }
+                
+                const resultsCount = document.getElementById('resultsCount');
+                if (resultsCount) {
+                    resultsCount.textContent = `Toplam: ${vins.length} sonuç`;
+                }
+                
+                const vinsHtml = vins.map(vin => `
+                    <div class="vin-tag">${vin}</div>
+                `).join('');
+                
+                return `<div class="vin-grid">${vinsHtml}</div>`;
+            },
+
+            handleSearch(searchTerm) {
+                if (!this.currentData) return;
+                
+                const originalData = this.currentData.data;
+                let filteredData = originalData;
+                
+                if (searchTerm.trim()) {
+                    filteredData = originalData.filter(vin => 
+                        vin.toLowerCase().startsWith(searchTerm.toLowerCase())
+                    );
+                }
+                
+                const modalBody = document.getElementById('modalBody');
+                if (modalBody) {
+                    modalBody.innerHTML = this.renderVinList(filteredData);
+                }
+            },
+
+            exportData() {
+                if (!this.currentData) return;
+                
+                const searchInput = document.getElementById('searchInput');
+                const searchTerm = searchInput ? searchInput.value.trim() : '';
+                
+                let exportData = this.currentData.data;
+                if (searchTerm) {
+                    exportData = this.currentData.data.filter(vin => 
+                        vin.toLowerCase().startsWith(searchTerm.toLowerCase())
+                    );
+                }
+                
+                if (exportData.length === 0) {
+                    alert('Export edilecek veri bulunamadı');
+                    return;
+                }
+                
+                const csvContent = 'VIN\n' + exportData.join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', `vins_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        };
+
+        // ===============================================================================
+        // 5. EVENT HANDLER MODULE
+        // ===============================================================================
+
+        const EventHandler = {
+            onDateCardClick(date) {
+                console.log('📅 Date card clicked:', date);
+                
+                // Clear custom date selection if clicking recent dates
+                const currentCustomDate = AppState.getSelectedCustomDate();
+                if (currentCustomDate && currentCustomDate !== date) {
+                    AppState.setSelectedCustomDate(null);
+                    DatePickerComponent.hideSelectedCustomDate();
+                    DatePickerComponent.setActiveCustomDate(false);
+                }
+                
+                App.loadAnalysisForDate(date);
+            },
+
+            onCustomDateSelect(date) {
+                console.log('📅 Custom date selected:', date);
+                App.loadCustomDate();
+            },
+
+            onPartChangeClick(index) {
+                console.log('📊 Part change clicked:', index);
+                
+                const analysis = AppState.getCurrentAnalysis();
+                if (analysis && analysis.partChanges && analysis.partChanges[index]) {
+                    ModalComponent.renderPartChangeModal(analysis.partChanges[index]);
+                }
+            },
+
+            onMissingPartClick(index) {
+                console.log('📊 Missing part clicked:', index);
+                
+                const analysis = AppState.getCurrentAnalysis();
+                if (analysis && analysis.missingRequired && analysis.missingRequired[index]) {
+                    ModalComponent.renderMissingPartModal(analysis.missingRequired[index]);
+                }
+            },
+
+            onReanalyzeClick(date) {
+                console.log('🔄 Reanalyze clicked:', date);
+                
+                const button = event.target;
+                const originalText = button.textContent;
+                
+                button.textContent = '⟳';
+                button.classList.add('spinning');
+                
+                APIClient.reanalyzeDate(date)
+                    .then(data => {
+                        if (data.success) {
+                            // Reload analysis after reanalysis
+                            setTimeout(() => {
+                                App.loadAnalysisForDate(date);
+                            }, 2000);
+                        } else {
+                            alert('Yeniden analiz başarısız: ' + (data.message || 'Bilinmeyen hata'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Reanalyze error:', error);
+                        alert('Yeniden analiz sırasında bir hata oluştu');
+                    })
+                    .finally(() => {
+                        button.textContent = originalText;
+                        button.classList.remove('spinning');
+                    });
+            },
+
+            onManualAnalysisClick() {
+                console.log('🔨 Manual analysis clicked');
+                App.triggerManualAnalysis();
+            }
+        };
+
+        // ===============================================================================
+        // 6. APP CONTROLLER MODULE
+        // ===============================================================================
+
+        const App = {
+            async init() {
+                console.log('🚀 App initializing...');
+                
+                this.setupEventListeners();
+                this.setupStateObservers();
+                this.initializeUI();
+                await this.loadInitialData();
+                
+                console.log('✅ App initialized');
+            },
+
+            setupEventListeners() {
+                // Modal close events
+                document.getElementById('detailModal').addEventListener('click', (e) => {
+                    if (e.target === e.currentTarget) {
+                        ModalComponent.hide();
+                    }
+                });
+                
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        ModalComponent.hide();
+                    }
+                });
+            },
+
+            setupStateObservers() {
+                // Subscribe to state changes
+                AppState.subscribe('analysisData', (data) => {
+                    console.log('📊 Analysis data updated');
+                    this.updateAnalysisDisplay(data);
+                });
+
+                AppState.subscribe('loading', (loading) => {
+                    console.log('🔄 Loading state changed:', loading);
+                    this.updateLoadingState(loading);
+                });
+
+                AppState.subscribe('error', (error) => {
+                    console.log('❌ Error state changed:', error);
+                    this.updateErrorState(error);
+                });
+
+                AppState.subscribe('currentDate', (date) => {
+                    console.log('📅 Current date changed:', date);
+                    this.updateDateDisplay(date);
+                });
+            },
+
+            initializeUI() {
+                // Setup date picker
+                DatePickerComponent.renderDateCards('#dateCards');
+                DatePickerComponent.setupCustomDatePicker();
+                
+                // Set initial title
+                document.getElementById('analysisTitle').textContent = 'MSAS VPL Analyzer - Hoş Geldiniz';
+            },
+
+            async loadInitialData() {
+                console.log('🔍 Loading initial data...');
+                
+                // Show loading state
+                LoadingComponent.show('#changesContainer', 'En son analiz verisi aranıyor...');
+                LoadingComponent.show('#missingPartsContainer', 'Analiz verisi yükleniyor...');
+                
+                // Try to find analysis for recent dates
+                await this.findLatestAnalysis();
+            },
+
+            async findLatestAnalysis() {
+                const dates = DateUtils.getDateRange(7); // Try last 7 days
+                
+                for (const date of dates) {
+                    try {
+                        const dateStr = DateUtils.formatISO(date);
+                        console.log(`📅 Trying date: ${dateStr}`);
+                        
+                        const response = await APIClient.fetchAnalysis(dateStr);
+                        
+                        if (response.success) {
+                            console.log('✅ Found analysis for:', dateStr);
+                            const normalizedData = ResponseNormalizer.normalizeAnalysis(response);
+                            
+                            if (Validators.hasRealData(normalizedData)) {
+                                AppState.setCurrentDate(dateStr);
+                                AppState.setAnalysisData(normalizedData);
+                                return; // Success - exit loop
+                            }
+                        }
+                    } catch (error) {
+                        console.log(`❌ No analysis for ${DateUtils.formatISO(date)}`);
+                        continue; // Try next date
+                    }
+                }
+                
+                // No analysis found
+                console.log('❌ No analysis found in last 7 days');
+                ErrorComponent.showNoData('#changesContainer');
+                ErrorComponent.showEmpty('#missingPartsContainer', 
+                    ' ', 
+                    ' '
+                );
+            },
+
+            async loadAnalysisForDate(dateStr) {
+                console.log('🔍 Loading analysis for date:', dateStr);
+                
+                // Set loading state
+                AppState.setLoading(true);
+                AppState.setError(null);
+                AppState.setCurrentDate(dateStr);
+                
+                try {
+                    const response = await APIClient.fetchAnalysis(dateStr);
+                    
+                    console.log('📥 Raw API response:', response);
+                    
+                    if (response.success) {
+                        const normalizedData = ResponseNormalizer.normalizeAnalysis(response);
+                        
+                        console.log('🔍 Normalized data check:', normalizedData);
+                        console.log('✅ Setting analysis data');
+                        
+                        AppState.setAnalysisData(normalizedData);
+                        console.log('✅ Analysis loaded successfully');
+                    } else {
+                        throw new Error(response.message || 'Analysis request failed');
+                    }
+                } catch (error) {
+                    console.error('❌ Analysis load error:', error);
+                    AppState.setError(error.message);
+                } finally {
+                    AppState.setLoading(false);
+                }
+            },
+
+            loadCustomDate() {
+                const dateInput = document.getElementById('customDate');
+                const selectedDate = dateInput ? dateInput.value : null;
+                
+                if (!selectedDate) {
+                    alert('Lütfen bir tarih seçin');
+                    return;
+                }
+                
+                console.log('📅 Loading custom date:', selectedDate);
+                
+                // Update UI
+                const loadBtn = document.getElementById('loadDateBtn');
+                if (loadBtn) {
+                    const originalText = loadBtn.textContent;
+                    loadBtn.textContent = '🔍 Yükleniyor...';
+                    loadBtn.disabled = true;
+                    
+                    // Store custom date and show display
+                    AppState.setSelectedCustomDate(selectedDate);
+                    DatePickerComponent.showSelectedCustomDate(selectedDate);
+                    
+                    // Load analysis
+                    this.loadAnalysisForDate(selectedDate).finally(() => {
+                        loadBtn.textContent = originalText;
+                        loadBtn.disabled = false;
+                    });
+                }
+            },
+
+            loadSelectedCustomDate() {
+                const customDate = AppState.getSelectedCustomDate();
+                if (customDate) {
+                    this.loadAnalysisForDate(customDate);
+                }
+            },
+
+            reanalyzeCustomDate() {
+                const customDate = AppState.getSelectedCustomDate();
+                if (customDate) {
+                    EventHandler.onReanalyzeClick(customDate);
+                }
+            },
+
+            async triggerManualAnalysis() {
+                console.log('🔨 Triggering manual analysis...');
+                
+                const button = document.getElementById('manualAnalysisBtn');
+                if (button) {
+                    const originalText = button.textContent;
+                    button.textContent = 'Analiz Ediliyor...';
+                    button.disabled = true;
+                    
+                    try {
+                        const response = await APIClient.triggerManualAnalysis();
+                        
+                        if (response.success) {
+                            console.log('✅ Manual analysis completed');
+                            
+                            // Wait a moment then reload today's analysis
+                            const today = DateUtils.formatISO(new Date());
+                            setTimeout(() => {
+                                this.loadAnalysisForDate(today);
+                            }, 2000);
+                        } else {
+                            throw new Error(response.message || 'Manual analysis failed');
+                        }
+                    } catch (error) {
+                        console.error('❌ Manual analysis error:', error);
+                        alert('Manuel analiz sırasında bir hata oluştu: ' + error.message);
+                    } finally {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }
+                }
+            },
+
+            openConfig() {
+                window.location.href = '/config';
+            },
+
+            // UI Update Methods
+            updateAnalysisDisplay(analysisData) {
+                if (!analysisData) {
+                    ErrorComponent.showNoData('#changesContainer');
+                    ErrorComponent.showEmpty('#missingPartsContainer', 
+                        '⚠️ Veri Bulunamadı', 
+                        'Analiz edilmiş veri bulunmuyor'
+                    );
+                    return;
+                }
+
+                // Update part changes
+                PartChangesComponent.render('#changesContainer', analysisData.partChanges);
+                
+                // Update missing parts
+                MissingPartsComponent.render('#missingPartsContainer', analysisData.missingRequired);
+            },
+
+            updateLoadingState(loading) {
+                if (loading) {
+                    LoadingComponent.show('#changesContainer', 'Analiz verisi yükleniyor...');
+                    LoadingComponent.show('#missingPartsContainer', 'Analiz verisi yükleniyor...');
+                }
+            },
+
+            updateErrorState(error) {
+                if (error) {
+                    ErrorComponent.show('#changesContainer', error);
+                    ErrorComponent.show('#missingPartsContainer', 'Veri yüklenemedi');
+                }
+            },
+
+            updateDateDisplay(date) {
+                if (date) {
+                    // Update title
+                    const displayDate = DateUtils.formatTurkish(new Date(date));
+                    document.getElementById('analysisTitle').textContent = `Parça Değişiklikleri - ${displayDate}`;
+                    
+                    // Update active date indicators
+                    const customDate = AppState.getSelectedCustomDate();
+                    if (customDate === date) {
+                        DatePickerComponent.setActiveCustomDate(true);
+                        // Remove active from date cards
+                        document.querySelectorAll('.date-card').forEach(card => {
+                            card.classList.remove('active');
+                        });
+                    } else {
+                        DatePickerComponent.setActiveDate(date);
+                        DatePickerComponent.setActiveCustomDate(false);
+                    }
+                }
+            }
+        };
+
+        // ===============================================================================
+        // 7. CACHE MANAGER (Performance Optimization)
+        // ===============================================================================
+
+        const CacheManager = {
+            cache: new Map(),
+            TTL: 5 * 60 * 1000, // 5 minutes
+
+            get(key) {
+                const item = this.cache.get(key);
+                if (!item) return null;
+                
+                if (Date.now() > item.expiry) {
+                    this.cache.delete(key);
+                    return null;
+                }
+                
+                console.log('💾 Cache hit for:', key);
+                return item.data;
+            },
+
+            set(key, data) {
+                console.log('💾 Cache set for:', key);
+                this.cache.set(key, {
+                    data: data,
+                    expiry: Date.now() + this.TTL
+                });
+            },
+
+            invalidate(key) {
+                console.log('💾 Cache invalidated for:', key);
+                this.cache.delete(key);
+            },
+
+            clear() {
+                console.log('💾 Cache cleared');
+                this.cache.clear();
+            }
+        };
+
+        // ===============================================================================
+        // 8. SEARCH UTILITIES (Performance Optimization)
+        // ===============================================================================
+
+        const SearchUtils = {
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            },
+
+            searchVins(query, vins) {
+                if (!query.trim()) return vins;
+                
+                const searchTerm = query.toLowerCase();
+                return vins.filter(vin => 
+                    vin.toLowerCase().startsWith(searchTerm)
+                );
+            }
+        };
+
+        // ===============================================================================
+        // 9. APPLICATION BOOTSTRAP
+        // ===============================================================================
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM loaded, initializing VPL Dashboard...');
+            App.init().catch(error => {
+                console.error('❌ App initialization failed:', error);
+                ErrorComponent.show('#changesContainer', 'Uygulama başlatılamadı: ' + error.message);
             });
+        });
+
+        // Global error handler
+        window.addEventListener('error', function(event) {
+            console.error('💥 Global error:', event.error);
+            AppState.setError('Beklenmeyen bir hata oluştu: ' + event.error.message);
+        });
+
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('💥 Unhandled promise rejection:', event.reason);
+            AppState.setError('Beklenmeyen bir hata oluştu: ' + event.reason);
+            event.preventDefault();
+        });
+
+        // ===============================================================================
+        // 10. PERFORMANCE MONITORING
+        // ===============================================================================
+
+        const PerformanceMonitor = {
+            timers: new Map(),
+
+            start(label) {
+                this.timers.set(label, performance.now());
+                console.log(`⏱️ Timer started: ${label}`);
+            },
+
+            end(label) {
+                const startTime = this.timers.get(label);
+                if (startTime) {
+                    const duration = performance.now() - startTime;
+                    console.log(`⏱️ Timer ended: ${label} - ${duration.toFixed(2)}ms`);
+                    this.timers.delete(label);
+                    return duration;
+                }
+                return null;
+            },
+
+            measure(label, fn) {
+                this.start(label);
+                const result = fn();
+                this.end(label);
+                return result;
+            },
+
+            async measureAsync(label, asyncFn) {
+                this.start(label);
+                const result = await asyncFn();
+                this.end(label);
+                return result;
+            }
+        };
+
+        // ===============================================================================
+        // 11. DEBUG UTILITIES (Development)
+        // ===============================================================================
+
+        const Debug = {
+            enabled: false, // Set to true for development
+
+            log(...args) {
+                if (this.enabled) {
+                    console.log('🐛 DEBUG:', ...args);
+                }
+            },
+
+            logState() {
+                if (this.enabled) {
+                    console.log('🐛 DEBUG STATE:', {
+                        currentDate: AppState.getCurrentDate(),
+                        hasAnalysis: !!AppState.getCurrentAnalysis(),
+                        selectedCustomDate: AppState.getSelectedCustomDate(),
+                        isLoading: AppState.isLoading(),
+                        error: AppState.getError()
+                    });
+                }
+            },
+
+            logPerformance() {
+                if (this.enabled && performance.memory) {
+                    console.log('🐛 DEBUG PERFORMANCE:', {
+                        usedJSHeapSize: Math.round(performance.memory.usedJSHeapSize / 1048576) + 'MB',
+                        totalJSHeapSize: Math.round(performance.memory.totalJSHeapSize / 1048576) + 'MB',
+                        jsHeapSizeLimit: Math.round(performance.memory.jsHeapSizeLimit / 1048576) + 'MB'
+                    });
+                }
+            }
+        };
+
+        // Make debug available globally in development
+        if (window.location.hostname === 'localhost') {
+            Debug.enabled = true;
+            window.VPLDebug = Debug;
+            window.VPLState = AppState;
+            window.VPLCache = CacheManager;
         }
 
-        // Format date in Turkish
-        function formatDateTurkish(date) {
-            const months = [
-                'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-                'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
-            ];
-            
-            const day = date.getDate();
-            const month = months[date.getMonth()];
-            const year = date.getFullYear();
-            
-            return `${day} ${month} ${year}`;
-        }
+        // ===============================================================================
+        // 12. ACCESSIBILITY IMPROVEMENTS
+        // ===============================================================================
+
+        const AccessibilityHelper = {
+            init() {
+                this.setupKeyboardNavigation();
+                this.setupScreenReaderSupport();
+                this.setupFocusManagement();
+            },
+
+            setupKeyboardNavigation() {
+                // Add keyboard support for date cards
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.classList.contains('date-card') && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        e.target.click();
+                    }
+                });
+            },
+
+            setupScreenReaderSupport() {
+                // Add ARIA labels and descriptions
+                const dateCards = document.querySelectorAll('.date-card');
+                dateCards.forEach(card => {
+                    card.setAttribute('role', 'button');
+                    card.setAttribute('tabindex', '0');
+                });
+            },
+
+            setupFocusManagement() {
+                // Manage focus for modals
+                const modal = document.getElementById('detailModal');
+                if (modal) {
+                    modal.addEventListener('keydown', (e) => {
+                        if (e.key === 'Tab') {
+                            // Trap focus within modal
+                            const focusableElements = modal.querySelectorAll(
+                                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                            );
+                            
+                            const firstElement = focusableElements[0];
+                            const lastElement = focusableElements[focusableElements.length - 1];
+                            
+                            if (e.shiftKey) {
+                                if (document.activeElement === firstElement) {
+                                    e.preventDefault();
+                                    lastElement.focus();
+                                }
+                            } else {
+                                if (document.activeElement === lastElement) {
+                                    e.preventDefault();
+                                    firstElement.focus();
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        };
+
+        // Initialize accessibility features
+        document.addEventListener('DOMContentLoaded', () => {
+            AccessibilityHelper.init();
+        });
+
+        // ===============================================================================
+        // 13. EXPORT GLOBAL INTERFACE
+        // ===============================================================================
+
+        // Export main App interface for HTML onclick handlers
+        window.App = App;
+        window.EventHandler = EventHandler;
+        window.ModalComponent = ModalComponent;
+
+        console.log('✅ VPL Dashboard modules loaded successfully');
     </script>
 </body>
 </html>

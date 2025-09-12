@@ -469,25 +469,30 @@ func readTEIFile(filePath string) (map[string]TEIRecord, error) {
 		lineCount++
 		line := strings.TrimSpace(scanner.Text())
 
-		// Skip empty lines
 		if line == "" {
 			continue
 		}
 
-		fields := strings.Split(line, "\t")
+		// Satırı boşluk/tab fark etmeksizin böl
+		fields := strings.Fields(line)
 
-		if len(fields) >= 3 {
-			record := TEIRecord{
-				CustomerReference: strings.TrimSpace(fields[0]),
-				InnerReference:    strings.TrimSpace(fields[1]),
-				PartDescription:   strings.TrimSpace(fields[2]),
-			}
-
-			// Customer reference'ı key olarak kullan
-			teiMap[record.CustomerReference] = record
-		} else {
+		// En az 3 alan olmalı: 9353, müşteriRef, bizimRef
+		if len(fields) < 3 {
 			log.Printf("Warning: Invalid TEI line %d: insufficient fields", lineCount)
+			continue
 		}
+
+		// 9353 sonrası tüm alanlar ama son alan bizim referans olacak
+		customerRef := strings.Join(fields[1:len(fields)-1], " ")
+		innerRef := fields[len(fields)-1]
+
+		record := TEIRecord{
+			CustomerReference: customerRef,
+			InnerReference:    innerRef,
+			PartDescription:   "", // Gerekirse diğer alanlardan alabilirsin
+		}
+
+		teiMap[customerRef] = record
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -498,7 +503,6 @@ func readTEIFile(filePath string) (map[string]TEIRecord, error) {
 	return teiMap, nil
 }
 
-// OSL dosyası okuma
 func readOSLFile(filePath string) (map[string]map[string]string, error) {
 	if filePath == "" {
 		return nil, fmt.Errorf("OSL file not found")
@@ -518,24 +522,29 @@ func readOSLFile(filePath string) (map[string]map[string]string, error) {
 		lineCount++
 		line := strings.TrimSpace(scanner.Text())
 
-		// Skip empty lines
+		// Boş satırları atla
 		if line == "" {
 			continue
 		}
 
-		fields := strings.Split(line, "\t")
+		// Hem tab hem de birden fazla boşlukları ayır
+		fields := strings.Fields(line)
 
-		if len(fields) >= 3 {
-			innerRef := strings.TrimSpace(fields[0])
-			paramName := strings.TrimSpace(fields[1])
-			paramValue := strings.TrimSpace(fields[2])
+		// En az 4 sütun olmalı: 9353, innerRef, paramName, value1, (opsiyonel value2)
+		if len(fields) >= 4 {
+			innerRef := strings.TrimSpace(fields[1])
+			paramName := strings.TrimSpace(fields[2])
 
-			// Inner reference için map yoksa oluştur
+			// value1 ve value2 varsa birleştir, yoksa sadece value1
+			paramValue := strings.TrimSpace(fields[3])
+			if len(fields) >= 5 {
+				paramValue += "\t" + strings.TrimSpace(fields[4])
+			}
+
 			if oslMap[innerRef] == nil {
 				oslMap[innerRef] = make(map[string]string)
 			}
 
-			// Parametreyi ekle
 			oslMap[innerRef][paramName] = paramValue
 		} else {
 			log.Printf("Warning: Invalid OSL line %d: insufficient fields", lineCount)
@@ -988,13 +997,15 @@ func hasRequiredPart(vinParts []VPLRecord, requiredPart string) bool {
 	return false
 }
 
+var seen = make(map[string]bool)
+
 func extractCustomerReferences(vplRecords []VPLRecord) []string {
 	var customerRefs []string
-	seen := make(map[string]bool)
 
 	for _, record := range vplRecords {
-		// Generate customer reference from part name (add spaces)
-		customerRef := formatCustomerReference(record.PartName)
+		// Customer reference = VIN + PartName (Prefix + Base + Suffix)
+		customerRef := record.Prefix + record.Base + record.Suffix
+
 		if !seen[customerRef] {
 			customerRefs = append(customerRefs, customerRef)
 			seen[customerRef] = true
@@ -1202,6 +1213,7 @@ func setupRoutes() {
 
 	// Masterdata Analysis endpoint
 	http.HandleFunc("/api/masterdata/analysis/", requireAuth(handleMasterDataAnalysis))
+	http.HandleFunc("/api/masterdata/manual-analysis", requireAuth(handleMasterDataManualAnalysis))
 
 	// Manuel analiz endpoint
 	http.HandleFunc("/api/vpl/analyze", requireAuth(handleManualVPLAnalysis))
@@ -1448,7 +1460,24 @@ func handleMasterDataSummary(w http.ResponseWriter, r *http.Request) {
 		Data:    summary,
 	})
 }
+func handleMasterDataManualAnalysis(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
+	// Bugünün tarihini al
+	today := time.Now().Format("2006-01-02")
+
+	// Bugünün tarihi için analiz yap
+	runCompleteAnalysis(today)
+
+	sendJSON(w, APIResponse{
+		Success: true,
+		Message: "Manual masterdata analysis started for today: " + today,
+		Data:    today,
+	})
+}
 func handleMasterDataIssues(w http.ResponseWriter, r *http.Request) {
 	date := strings.TrimPrefix(r.URL.Path, "/api/masterdata/issues/")
 	if date == "" || !validateInput(date) {
@@ -1974,10 +2003,10 @@ func main() {
 // VPL Analysis handler
 func handleVPLAnalysis(w http.ResponseWriter, r *http.Request) {
 	date := strings.TrimPrefix(r.URL.Path, "/api/analysis/")
-	log.Printf("🔍 VPL Analysis requested for date: %s", date)
+	log.Printf("🔍 VPL Analysis requested for date: %s", date) // DEBUG ekleyin
 
 	if date == "" || !validateInput(date) {
-		log.Printf("❌ Invalid date parameter: %s", date)
+		log.Printf("❌ Invalid date parameter: %s", date) // DEBUG ekleyin
 		sendError(w, "Invalid date parameter", http.StatusBadRequest)
 		return
 	}
@@ -1985,46 +2014,40 @@ func handleVPLAnalysis(w http.ResponseWriter, r *http.Request) {
 	// VPL summary'yi al
 	summary, err := getVPLAnalysisSummary(date)
 	if err != nil {
-		log.Printf("❌ getVPLAnalysisSummary error: %v", err)
+		log.Printf("❌ getVPLAnalysisSummary error: %v", err) // DEBUG ekleyin
 		sendError(w, "Analysis not found", http.StatusNotFound)
 		return
 	}
 
-	log.Printf("✅ VPL Summary found: Issues=%d", summary.IssuesFound)
+	log.Printf("✅ VPL Summary found: Issues=%d", summary.IssuesFound) // DEBUG ekleyin
 
-	// ✅ GERÇEK VPL ISSUES'LARI AL
-	vplIssues, total, err := getVPLIssues(date, 1, 100000) // Tüm issues'ları al
+	// ✅ GERÇEK VPL ISSUES'LARI AL (boş array yerine)
+	vplIssues, total, err := getVPLIssues(date, 1, 9000000) // İlk 1000 issue'yu al
 	if err != nil {
-		log.Printf("❌ getVPLIssues error: %v", err)
-		vplIssues = []VPLIssueDetail{}
+		log.Printf("❌ getVPLIssues error: %v", err) // DEBUG ekleyin
+		vplIssues = []VPLIssueDetail{}              // Hata varsa boş array
 	} else {
-		log.Printf("✅ Found %d VPL issues (total: %d)", len(vplIssues), total)
+		log.Printf("✅ Found %d VPL issues (total: %d)", len(vplIssues), total) // DEBUG ekleyin
 	}
 
-	// ✅ PART CHANGES'İ VPL ISSUES'LARDAN OLUŞTUR
+	// ✅ PART CHANGES'I VPL ISSUES'LARDAN OLUŞTUR
 	partChanges := convertVPLIssuesToPartChanges(vplIssues)
 	missingRequired := convertVPLIssuesToMissingRequired(vplIssues)
 
-	log.Printf("✅ Converted to %d part changes, %d missing required", len(partChanges), len(missingRequired))
+	log.Printf("✅ Converted to %d part changes, %d missing required", len(partChanges), len(missingRequired)) // DEBUG ekleyin
 
 	// Frontend'in beklediği format
 	analysisData := map[string]interface{}{
-		"part_changes":           partChanges,
-		"missing_required_file2": missingRequired,
+		"part_changes":           partChanges,     // ✅ Gerçek veri
+		"missing_required_file2": missingRequired, // ✅ Gerçek veri
 		"summary":                summary,
 	}
 
-	log.Printf("✅ Sending analysis data to frontend")
-
-	// Response'u da logla
-	responseData := map[string]interface{}{"analysis": analysisData}
-	if len(partChanges) > 0 {
-		log.Printf("📤 Sample part change being sent: %+v", partChanges[0])
-	}
+	log.Printf("✅ Sending analysis data to frontend") // DEBUG ekleyin
 
 	sendJSON(w, APIResponse{
 		Success: true,
-		Data:    responseData,
+		Data:    map[string]interface{}{"analysis": analysisData},
 	})
 }
 
@@ -2137,6 +2160,7 @@ func handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Masterdata reanalyze handler
 func handleMasterDataReanalyze(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -2158,7 +2182,10 @@ func handleMasterDataReanalyze(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Şu an için sadece başarılı response dön (gerçek masterdata analizi eklenene kadar)
-
+	sendJSON(w, APIResponse{
+		Success: true,
+		Message: "Masterdata reanalysis completed",
+	})
 }
 
 // VPL Issues'ları Part Changes formatına dönüştür
