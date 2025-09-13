@@ -834,369 +834,730 @@
 
         // Load masterdata analysis for specific date
         function loadMasterdataAnalysis(date) {
-            console.log('🔍 Loading masterdata analysis for date:', date);
+    console.log('🔍 Loading masterdata analysis for date:', date);
+    
+    // UI state güncellemesi
+    updateActiveDate(date);
+    updateTitles(date);
+    showLoadingState();
+    
+    const apiUrl = `/api/masterdata/analysis/${date}`;
+    console.log('📡 Fetching:', apiUrl);
+    
+    fetch(apiUrl)
+        .then(response => {
+            console.log('📥 Response status:', response.status);
+            console.log('📥 Response headers:', response.headers);
             
-            // Update active date card
-            document.querySelectorAll('.date-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            
-            if (event) {
-                event.target.closest('.date-card').classList.add('active');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Raw response data:', data);
+            console.log('📊 Response success:', data.success);
+            console.log('📊 Response keys:', Object.keys(data));
             
-            // Update titles
-            const formattedDate = formatDateTurkish(new Date(date));
-            document.getElementById('teiTitle').textContent = `TEI Analizi - ${formattedDate}`;
-            document.getElementById('oslTitle').textContent = `OSL Analizi - ${formattedDate}`;
-            
-            // Show loading state
-            showLoadingState();
-            
-            // Fetch analysis data from backend
-            const apiUrl = `/api/masterdata/analysis/${date}`;
-            console.log('📡 Fetching:', apiUrl);
-            
-            fetch(apiUrl)
-                .then(response => {
-                    console.log('📥 Response status:', response.status);
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('📊 Response data:', data);
-                    
-                    if (data.success) {
-                        currentAnalysisData = data.analysis;
-                        updateMasterdataDisplay(data.analysis);
-                        console.log('✅ Masterdata analysis loaded successfully');
-                    } else {
-                        console.warn('⚠️ Analysis failed:', data.message);
-                        showErrorState('Analiz verisi yüklenemedi: ' + (data.message || 'Bilinmeyen hata'));
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ Analysis load error:', error);
-                    showErrorState('Analiz verisi yüklenirken bir hata oluştu: ' + error.message);
-                });
-        }
+            if (data.success && data.data) {
+                console.log('📊 Data keys:', Object.keys(data.data));
+                
+                // Veriyi normalize et
+                const normalizedData = normalizeMasterdataResponse(data);
+                console.log('✅ Normalized data:', normalizedData);
+                
+                // UI'yi güncelle
+                updateMasterdataDisplay(normalizedData);
+                console.log('✅ Masterdata analysis loaded successfully');
+            } else {
+                console.warn('⚠️ API returned error:', data.message);
+                showErrorState('Analiz verisi yüklenemedi: ' + (data.message || 'Bilinmeyen hata'));
+            }
+        })
+        .catch(error => {
+            console.error('❌ Analysis load error:', error);
+            showErrorState('Analiz verisi yüklenirken bir hata oluştu: ' + error.message);
+        });
+}
 
         // Update masterdata display with real data
-        function updateMasterdataDisplay(analysisData) {
-            updateTEIAnalysis(analysisData.tei_analysis_results);
-            updateOSLAnalysis(analysisData.osl_analysis_results);
-            updateComplianceOverview(analysisData);
-        }
+       function updateMasterdataDisplay(analysisData) {
+    console.log('🎨 Updating masterdata display with:', analysisData);
+    
+    try {
+        // TEI analysis güncelle
+        updateTEIAnalysis(analysisData.tei_analysis_results);
+        console.log('✅ TEI analysis updated');
+        
+        // OSL analysis güncelle
+        updateOSLAnalysis(analysisData.osl_analysis_results);
+        console.log('✅ OSL analysis updated');
+        
+        // Compliance overview güncelle
+        updateComplianceOverview(analysisData);
+        console.log('✅ Compliance overview updated');
+        
+    } catch (error) {
+        console.error('❌ Error updating masterdata display:', error);
+        showErrorState('Veri gösterilirken hata oluştu: ' + error.message);
+    }
+}
 
-        // Update TEI analysis section
-        function updateTEIAnalysis(teiResults) {
-            // Update TEI statistics
-            const teiStatsHtml = `
-                <div class="stat-card">
-                    <span class="stat-label">VPL Parçaları</span>
-                    <span class="stat-value">${teiResults.statistics.total_vpl_parts}</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">TEI'de Bulunan</span>
-                    <span class="stat-value success">${teiResults.statistics.found_in_tei} (${teiResults.statistics.tei_match_rate.toFixed(1)}%)</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Inner Ref Doğruluğu</span>
-                    <span class="stat-value ${teiResults.statistics.inner_ref_accuracy > 90 ? 'success' : 'warning'}">${teiResults.statistics.inner_ref_accuracy.toFixed(1)}%</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Açıklama Kapsamı</span>
-                    <span class="stat-value ${teiResults.statistics.description_coverage > 90 ? 'success' : 'warning'}">${teiResults.statistics.description_coverage.toFixed(1)}%</span>
+function updateActiveDate(date) {
+    // Date card'ları güncelle
+    document.querySelectorAll('.date-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    
+    const targetCard = document.querySelector(`[data-date="${date}"]`);
+    if (targetCard) {
+        targetCard.classList.add('active');
+    }
+}
+function normalizeMasterdataResponse(rawResponse) {
+    console.log('🔄 Normalizing masterdata response:', rawResponse);
+    
+    // Backend'den gelen yapı kontrol et
+    let analysisData;
+    
+    if (rawResponse.data && rawResponse.data.analysis) {
+        // Wrapped format: { success: true, data: { analysis: {...} } }
+        analysisData = rawResponse.data.analysis;
+        console.log('✅ Found wrapped analysis data');
+    } else if (rawResponse.data) {
+        // Direct format: { success: true, data: {...} }
+        analysisData = rawResponse.data;
+        console.log('✅ Found direct analysis data');
+    } else {
+        console.error('❌ No analysis data found in response');
+        throw new Error('Invalid response structure');
+    }
+    
+    // TEI analysis kontrol et
+    if (!analysisData.tei_analysis_results) {
+        console.error('❌ No TEI analysis results found');
+        throw new Error('TEI analysis results missing');
+    }
+    
+    // OSL analysis kontrol et
+    if (!analysisData.osl_analysis_results) {
+        console.error('❌ No OSL analysis results found');
+        throw new Error('OSL analysis results missing');
+    }
+    
+    console.log('✅ Response validation passed');
+    return analysisData;
+}
+function updateScoreCircle(score) {
+    const circle = document.getElementById('scoreCircle');
+    if (!circle) return;
+    
+    const degrees = (score / 100) * 360;
+    let color = '#f87171'; // Error red
+    
+    if (score > 80) color = '#4ade80'; // Success green
+    else if (score > 60) color = '#fb923c'; // Warning orange
+    
+    circle.style.background = `conic-gradient(${color} 0deg, ${color} ${degrees}deg, #2a2a2a ${degrees}deg)`;
+}
+function formatDateTurkish(date) {
+    const months = [
+        'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+        'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+    
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `${day} ${month} ${year}`;
+}
+
+// 10. Modal functions for TEI results
+function openTEIModal(type) {
+    if (!currentAnalysisData) return;
+    
+    const modal = document.getElementById('detailModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const searchInput = document.getElementById('searchInput');
+    
+    let titleText = '';
+    let data = [];
+    
+    const teiResults = currentAnalysisData.tei_analysis_results;
+    
+    switch (type) {
+        case 'not_found':
+            titleText = `TEI'de Bulunamayan Parçalar (${teiResults.not_found_in_tei?.length || 0})`;
+            data = (teiResults.not_found_in_tei || []).map(part => ({ vpl_part_reference: part }));
+            break;
+        case 'inner_ref_errors':
+            titleText = `Inner Reference Hataları (${teiResults.inner_reference_incorrect?.length || 0})`;
+            data = teiResults.inner_reference_incorrect || [];
+            break;
+        case 'missing_desc':
+            titleText = `Eksik Açıklamalar (${teiResults.missing_description?.length || 0})`;
+            data = teiResults.missing_description || [];
+            break;
+    }
+    
+    modalTitle.textContent = titleText;
+    searchInput.value = '';
+    searchInput.placeholder = '🔍 Part referansı ara...';
+    
+    currentModalData = { type: 'tei', subtype: type, data: data };
+    renderTEIModalContent(data);
+    
+    searchInput.oninput = () => filterTEIModalContent(searchInput.value);
+    modal.classList.add('show');
+}
+
+// 11. Modal functions for OSL results
+function openOSLModal(type) {
+    if (!currentAnalysisData) return;
+    
+    const modal = document.getElementById('detailModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const searchInput = document.getElementById('searchInput');
+    
+    let titleText = '';
+    let data = [];
+    
+    const oslResults = currentAnalysisData.osl_analysis_results;
+    
+    if (oslResults.validation_results) {
+        switch (type) {
+            case 'all_validation':
+                titleText = `Tüm Validation Sonuçları (${oslResults.validation_results.length})`;
+                data = oslResults.validation_results;
+                break;
+            case 'required_violations':
+                titleText = `Required Parametre Violation'ları`;
+                data = oslResults.validation_results.filter(r => 
+                    r.required_compliance && !r.required_compliance.is_compliant);
+                break;
+            case 'ck_violations':
+                titleText = `CK Modülü Violation'ları`;
+                data = oslResults.validation_results.filter(r => 
+                    r.ck_module_compliance && r.ck_module_compliance.is_ck_module && !r.ck_module_compliance.is_compliant);
+                break;
+        }
+    }
+    
+    modalTitle.textContent = titleText;
+    searchInput.value = '';
+    searchInput.placeholder = '🔍 Inner reference ara...';
+    
+    currentModalData = { type: 'osl', subtype: type, data: data };
+    renderOSLModalContent(data);
+    
+    searchInput.oninput = () => filterOSLModalContent(searchInput.value);
+    modal.classList.add('show');
+}
+
+// 12. Render TEI modal content
+function renderTEIModalContent(data) {
+    const modalBody = document.getElementById('modalBody');
+    const resultsCount = document.getElementById('resultsCount');
+    
+    if (!data || data.length === 0) {
+        modalBody.innerHTML = '<div class="empty-state"><h3>Sonuç bulunamadı</h3></div>';
+        resultsCount.textContent = 'Toplam: 0 sonuç';
+        return;
+    }
+    
+    resultsCount.textContent = `Toplam: ${data.length} sonuç`;
+    
+    let contentHtml = '';
+    
+    data.forEach((item, index) => {
+        if (typeof item === 'string') {
+            // Simple string data (not found items)
+            contentHtml += `
+                <div class="modal-item">
+                    <div class="modal-item-header">Part ${index + 1}: ${item}</div>
+                    <div class="modal-item-content">
+                        <div class="modal-item-field">
+                            <span class="field-label">VPL Referansı:</span>
+                            <span class="field-value error">${item}</span>
+                        </div>
+                        <div class="modal-item-field">
+                            <span class="field-label">Durum:</span>
+                            <span class="field-value error">TEI'de bulunamadı</span>
+                        </div>
+                    </div>
                 </div>
             `;
-            document.getElementById('teiStats').innerHTML = teiStatsHtml;
-
-            // Update TEI results
-            let teiResultsHtml = '';
+        } else {
+            // Object data (found items, validation errors, etc.)
+            let statusClass = 'success';
+            let statusText = 'Uyumlu';
             
-            // TEI Match Results
-            if (teiResults.found_in_tei.length > 0) {
-                teiResultsHtml += `
-                    <div class="result-item success" onclick="openTEIModal('found')">
-                        <div class="result-header">
-                            <div class="result-info">
-                                <div class="result-title">TEI'de Bulunan Parçalar</div>
-                                <div class="result-count">${teiResults.found_in_tei.length}</div>
-                            </div>
-                            <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('found');">Detayları Gör</button>
+            if (item.error_reason) {
+                statusClass = 'error';
+                statusText = 'Hata';
+            } else if (!item.description_exists) {
+                statusClass = 'warning';
+                statusText = 'Eksik açıklama';
+            }
+            
+            contentHtml += `
+                <div class="modal-item">
+                    <div class="modal-item-header">${item.vpl_part_reference || item.customer_reference}</div>
+                    <div class="modal-item-content">
+                        <div class="modal-item-field">
+                            <span class="field-label">Customer Reference:</span>
+                            <span class="field-value">${item.customer_reference || '-'}</span>
                         </div>
-                        <div class="result-description">Başarılı TEI eşleşmeleri ve inner reference kontrolü</div>
-                    </div>
-                `;
-            }
-
-            // TEI Not Found
-            if (teiResults.not_found_in_tei.length > 0) {
-                teiResultsHtml += `
-                    <div class="result-item error" onclick="openTEIModal('not_found')">
-                        <div class="result-header">
-                            <div class="result-info">
-                                <div class="result-title">TEI'de Bulunamayan Parçalar</div>
-                                <div class="result-count">${teiResults.not_found_in_tei.length}</div>
-                            </div>
-                            <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('not_found');">Detayları Gör</button>
+                        <div class="modal-item-field">
+                            <span class="field-label">Inner Reference:</span>
+                            <span class="field-value">${item.inner_reference || '-'}</span>
                         </div>
-                        <div class="result-description">TEI dosyasında karşılığı bulunmayan VPL parçaları</div>
-                    </div>
-                `;
-            }
-
-            // Inner Reference Errors
-            if (teiResults.inner_reference_incorrect.length > 0) {
-                teiResultsHtml += `
-                    <div class="result-item warning" onclick="openTEIModal('inner_ref_errors')">
-                        <div class="result-header">
-                            <div class="result-info">
-                                <div class="result-title">Inner Reference Hataları</div>
-                                <div class="result-count">${teiResults.inner_reference_incorrect.length}</div>
-                            </div>
-                            <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('inner_ref_errors');">Detayları Gör</button>
+                        <div class="modal-item-field">
+                            <span class="field-label">Durum:</span>
+                            <span class="field-value ${statusClass}">${statusText}</span>
                         </div>
-                        <div class="result-description">Yanlış inner reference formatına sahip parçalar</div>
-                    </div>
-                `;
-            }
-
-            // Missing Descriptions
-            if (teiResults.missing_description.length > 0) {
-                teiResultsHtml += `
-                    <div class="result-item warning" onclick="openTEIModal('missing_desc')">
-                        <div class="result-header">
-                            <div class="result-info">
-                                <div class="result-title">Eksik Açıklamalar</div>
-                                <div class="result-count">${teiResults.missing_description.length}</div>
+                        ${item.expected_inner ? `
+                            <div class="modal-item-field">
+                                <span class="field-label">Beklenen Inner:</span>
+                                <span class="field-value warning">${item.expected_inner}</span>
                             </div>
-                            <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('missing_desc');">Detayları Gör</button>
+                            <div class="modal-item-field">
+                                <span class="field-label">Gerçek Inner:</span>
+                                <span class="field-value error">${item.actual_inner}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${item.error_reason ? `
+                        <div class="violations-list">
+                            <div class="violation-item">${item.error_reason}</div>
                         </div>
-                        <div class="result-description">Açıklama bilgisi eksik olan parçalar</div>
-                    </div>
-                `;
-            }
-
-            if (teiResultsHtml === '') {
-                teiResultsHtml = `
-                    <div class="empty-state">
-                        <h3>📄 TEI analizi tamamlandı</h3>
-                        <p>Tüm kontroller başarılı, herhangi bir sorun bulunamadı.</p>
-                    </div>
-                `;
-            }
-
-            document.getElementById('teiResults').innerHTML = teiResultsHtml;
+                    ` : ''}
+                </div>
+            `;
         }
+    });
+    
+    modalBody.innerHTML = contentHtml;
+}
+
+// 13. Render OSL modal content
+function renderOSLModalContent(data) {
+    const modalBody = document.getElementById('modalBody');
+    const resultsCount = document.getElementById('resultsCount');
+    
+    if (!data || data.length === 0) {
+        modalBody.innerHTML = '<div class="empty-state"><h3>Sonuç bulunamadı</h3></div>';
+        resultsCount.textContent = 'Toplam: 0 sonuç';
+        return;
+    }
+    
+    resultsCount.textContent = `Toplam: ${data.length} sonuç`;
+    
+    let contentHtml = '';
+    
+    data.forEach((item, index) => {
+        const complianceClass = item.overall_compliance ? 'success' : 'error';
+        const complianceText = item.overall_compliance ? 'Uyumlu' : 'Violation Var';
+        
+        contentHtml += `
+            <div class="modal-item">
+                <div class="modal-item-header">${item.inner_reference}</div>
+                <div class="modal-item-content">
+                    <div class="modal-item-field">
+                        <span class="field-label">Compliance Score:</span>
+                        <span class="field-value ${complianceClass}">${item.compliance_score?.toFixed(1) || 0}%</span>
+                    </div>
+                    <div class="modal-item-field">
+                        <span class="field-label">Genel Durum:</span>
+                        <span class="field-value ${complianceClass}">${complianceText}</span>
+                    </div>
+                    <div class="modal-item-field">
+                        <span class="field-label">MODULE:</span>
+                        <span class="field-value ${item.required_compliance?.has_module ? 'success' : 'error'}">${item.required_compliance?.module_value || 'Yok'}</span>
+                    </div>
+                    <div class="modal-item-field">
+                        <span class="field-label">PART_FAMILY:</span>
+                        <span class="field-value ${item.required_compliance?.has_part_family ? 'success' : 'error'}">${item.required_compliance?.part_family_value || 'Yok'}</span>
+                    </div>
+                    ${item.ck_module_compliance?.is_ck_module ? `
+                        <div class="modal-item-field">
+                            <span class="field-label">LABEL_POSITION:</span>
+                            <span class="field-value ${item.ck_module_compliance.has_label_position ? 'success' : 'error'}">${item.ck_module_compliance.label_position_value || 'Yok'}</span>
+                        </div>
+                        <div class="modal-item-field">
+                            <span class="field-label">LABEL_TYPE:</span>
+                            <span class="field-value ${item.ck_module_compliance.has_label_type ? 'success' : 'error'}">${item.ck_module_compliance.label_type_value || 'Yok'}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                ${item.violation_reasons && item.violation_reasons.length > 0 ? `
+                    <div class="violations-list">
+                        ${item.violation_reasons.map(reason => `<div class="violation-item">${reason}</div>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    
+    modalBody.innerHTML = contentHtml;
+}
+
+// 14. Filter modal content functions
+function filterTEIModalContent(searchTerm) {
+    if (!currentModalData || currentModalData.type !== 'tei') return;
+    
+    const originalData = currentModalData.data;
+    
+    if (!searchTerm.trim()) {
+        renderTEIModalContent(originalData);
+        return;
+    }
+    
+    const filteredData = originalData.filter(item => {
+        if (typeof item === 'string') {
+            return item.toLowerCase().includes(searchTerm.toLowerCase());
+        } else {
+            return (item.vpl_part_reference && item.vpl_part_reference.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                   (item.customer_reference && item.customer_reference.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                   (item.inner_reference && item.inner_reference.toLowerCase().includes(searchTerm.toLowerCase()));
+        }
+    });
+    
+    renderTEIModalContent(filteredData);
+}
+
+function filterOSLModalContent(searchTerm) {
+    if (!currentModalData || currentModalData.type !== 'osl') return;
+    
+    const originalData = currentModalData.data;
+    
+    if (!searchTerm.trim()) {
+        renderOSLModalContent(originalData);
+        return;
+    }
+    
+    const filteredData = originalData.filter(item => 
+        item.inner_reference.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    renderOSLModalContent(filteredData);
+}
+
+// 15. Close modal and global variables
+
+function closeModal() {
+    const modal = document.getElementById('detailModal');
+    modal.classList.remove('show');
+    currentModalData = null;
+}
+function updateActiveDate(date) {
+    // Date card'ları güncelle
+    document.querySelectorAll('.date-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    
+    const targetCard = document.querySelector(`[data-date="${date}"]`);
+    if (targetCard) {
+        targetCard.classList.add('active');
+    }
+}
+
+function updateTitles(date) {
+    const formattedDate = formatDateTurkish(new Date(date));
+    const teiTitle = document.getElementById('teiTitle');
+    const oslTitle = document.getElementById('oslTitle');
+    
+    if (teiTitle) teiTitle.textContent = `TEI Analizi - ${formattedDate}`;
+    if (oslTitle) oslTitle.textContent = `OSL Analizi - ${formattedDate}`;
+}
+function updateTitles(date) {
+    const formattedDate = formatDateTurkish(new Date(date));
+    const teiTitle = document.getElementById('teiTitle');
+    const oslTitle = document.getElementById('oslTitle');
+    
+    if (teiTitle) teiTitle.textContent = `TEI Analizi - ${formattedDate}`;
+    if (oslTitle) oslTitle.textContent = `OSL Analizi - ${formattedDate}`;
+}      // Update TEI analysis section
+function updateTEIAnalysis(teiResults) {
+    console.log('🎨 Updating TEI analysis:', teiResults);
+    
+    if (!teiResults || !teiResults.statistics) {
+        console.error('❌ Invalid TEI results structure');
+        showErrorState('TEI analiz verisi geçersiz');
+        return;
+    }
+    
+    const stats = teiResults.statistics;
+    
+    // TEI statistics güncelle
+    const teiStatsHtml = `
+        <div class="stat-card">
+            <span class="stat-label">VPL Parçaları</span>
+            <span class="stat-value">${stats.total_vpl_parts || 0}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">TEI'de Bulunan</span>
+            <span class="stat-value success">${stats.found_in_tei || 0} (${(stats.tei_match_rate || 0).toFixed(1)}%)</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Inner Ref Doğruluğu</span>
+            <span class="stat-value ${(stats.inner_ref_accuracy || 0) > 90 ? 'success' : 'warning'}">${(stats.inner_ref_accuracy || 0).toFixed(1)}%</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Açıklama Kapsamı</span>
+            <span class="stat-value ${(stats.description_coverage || 0) > 90 ? 'success' : 'warning'}">${(stats.description_coverage || 0).toFixed(1)}%</span>
+        </div>
+    `;
+    
+    const teiStatsElement = document.getElementById('teiStats');
+    if (teiStatsElement) {
+        teiStatsElement.innerHTML = teiStatsHtml;
+        console.log('✅ TEI stats updated');
+    }
+
+    // TEI results güncelle
+    let teiResultsHtml = '';
+    
+    // TEI'de bulunamayan parçalar
+    if (teiResults.not_found_in_tei && teiResults.not_found_in_tei.length > 0) {
+        teiResultsHtml += `
+            <div class="result-item error" onclick="openTEIModal('not_found')">
+                <div class="result-header">
+                    <div class="result-info">
+                        <div class="result-title">TEI'de Bulunamayan Parçalar</div>
+                        <div class="result-count">${teiResults.not_found_in_tei.length}</div>
+                    </div>
+                    <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('not_found');">Detayları Gör</button>
+                </div>
+                <div class="result-description">TEI dosyasında karşılığı bulunmayan VPL parçaları</div>
+            </div>
+        `;
+    }
+
+    // Inner Reference hataları
+    if (teiResults.inner_reference_incorrect && teiResults.inner_reference_incorrect.length > 0) {
+        teiResultsHtml += `
+            <div class="result-item warning" onclick="openTEIModal('inner_ref_errors')">
+                <div class="result-header">
+                    <div class="result-info">
+                        <div class="result-title">Inner Reference Hataları</div>
+                        <div class="result-count">${teiResults.inner_reference_incorrect.length}</div>
+                    </div>
+                    <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('inner_ref_errors');">Detayları Gör</button>
+                </div>
+                <div class="result-description">Yanlış inner reference formatına sahip parçalar</div>
+            </div>
+        `;
+    }
+
+    // Eksik açıklamalar
+    if (teiResults.missing_description && teiResults.missing_description.length > 0) {
+        teiResultsHtml += `
+            <div class="result-item warning" onclick="openTEIModal('missing_desc')">
+                <div class="result-header">
+                    <div class="result-info">
+                        <div class="result-title">Eksik Açıklamalar</div>
+                        <div class="result-count">${teiResults.missing_description.length}</div>
+                    </div>
+                    <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('missing_desc');">Detayları Gör</button>
+                </div>
+                <div class="result-description">Açıklama bilgisi eksik olan parçalar</div>
+            </div>
+        `;
+    }
+
+    if (teiResultsHtml === '') {
+        teiResultsHtml = `
+            <div class="empty-state">
+                <h3>📄 TEI analizi tamamlandı</h3>
+                <p>Tüm kontroller başarılı, herhangi bir sorun bulunamadı.</p>
+            </div>
+        `;
+    }
+
+    const teiResultsElement = document.getElementById('teiResults');
+    if (teiResultsElement) {
+        teiResultsElement.innerHTML = teiResultsHtml;
+        console.log('✅ TEI results updated');
+    }
+}
 
         // Update OSL analysis section  
         function updateOSLAnalysis(oslResults) {
-            // Update OSL statistics
-            const oslStatsHtml = `
-                <div class="stat-card">
-                    <span class="stat-label">Inner Reference</span>
-                    <span class="stat-value">${oslResults.statistics.total_inner_references}</span>
+    console.log('🎨 Updating OSL analysis:', oslResults);
+    
+    if (!oslResults || !oslResults.statistics) {
+        console.error('❌ Invalid OSL results structure');
+        showErrorState('OSL analiz verisi geçersiz');
+        return;
+    }
+    
+    const stats = oslResults.statistics;
+    
+    // OSL statistics güncelle
+    const oslStatsHtml = `
+        <div class="stat-card">
+            <span class="stat-label">Inner Reference</span>
+            <span class="stat-value">${stats.total_inner_references || 0}</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">OSL'de Bulunan</span>
+            <span class="stat-value success">${stats.found_in_osl || 0} (${(stats.osl_match_rate || 0).toFixed(1)}%)</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Parametre Tamamlama</span>
+            <span class="stat-value ${(stats.parameter_completeness || 0) > 80 ? 'success' : 'warning'}">${(stats.parameter_completeness || 0).toFixed(1)}%</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">CK Modülü Uyumluluğu</span>
+            <span class="stat-value ${(stats.ck_compliance_rate || 0) > 80 ? 'success' : 'error'}">${(stats.ck_compliance_rate || 0).toFixed(1)}%</span>
+        </div>
+    `;
+    
+    const oslStatsElement = document.getElementById('oslStats');
+    if (oslStatsElement) {
+        oslStatsElement.innerHTML = oslStatsHtml;
+        console.log('✅ OSL stats updated');
+    }
+
+    // OSL results güncelle
+    let oslResultsHtml = '';
+    
+    if (oslResults.validation_statistics) {
+        const validationStats = oslResults.validation_statistics;
+        
+        // Genel uyumluluk
+        oslResultsHtml += `
+            <div class="result-item ${(validationStats.overall_compliance_rate || 0) > 80 ? 'success' : 'warning'}" onclick="openOSLModal('all_validation')">
+                <div class="result-header">
+                    <div class="result-info">
+                        <div class="result-title">Genel Uyumluluk</div>
+                        <div class="result-count">${validationStats.fully_compliant_parts || 0}/${validationStats.total_parts || 0}</div>
+                    </div>
+                    <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('all_validation');">Detayları Gör</button>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-label">OSL'de Bulunan</span>
-                    <span class="stat-value success">${oslResults.statistics.found_in_osl} (${oslResults.statistics.osl_match_rate.toFixed(1)}%)</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Parametre Tamamlama</span>
-                    <span class="stat-value ${oslResults.statistics.parameter_completeness > 80 ? 'success' : 'warning'}">${oslResults.statistics.parameter_completeness.toFixed(1)}%</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">CK Modülü Uyumluluğu</span>
-                    <span class="stat-value ${oslResults.statistics.ck_compliance_rate > 80 ? 'success' : 'error'}">${oslResults.statistics.ck_compliance_rate.toFixed(1)}%</span>
+                <div class="result-description">Tüm validation kurallarına uygun parçalar (${(validationStats.overall_compliance_rate || 0).toFixed(1)}%)</div>
+            </div>
+        `;
+
+        // Required parametre violations
+        if ((validationStats.required_param_violations || 0) > 0) {
+            oslResultsHtml += `
+                <div class="result-item error" onclick="openOSLModal('required_violations')">
+                    <div class="result-header">
+                        <div class="result-info">
+                            <div class="result-title">Required Parametre Eksikleri</div>
+                            <div class="result-count">${validationStats.required_param_violations}</div>
+                        </div>
+                        <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('required_violations');">Detayları Gör</button>
+                    </div>
+                    <div class="result-description">MODULE veya PART_FAMILY eksik olan parçalar</div>
                 </div>
             `;
-            document.getElementById('oslStats').innerHTML = oslStatsHtml;
-
-            // Update OSL results based on validation results
-            let oslResultsHtml = '';
-            
-            if (oslResults.validation_results) {
-                const validationStats = oslResults.validation_statistics;
-                
-                // Overall compliance
-                oslResultsHtml += `
-                    <div class="result-item ${validationStats.overall_compliance_rate > 80 ? 'success' : 'warning'}" onclick="openOSLModal('all_validation')">
-                        <div class="result-header">
-                            <div class="result-info">
-                                <div class="result-title">Genel Uyumluluk</div>
-                                <div class="result-count">${validationStats.fully_compliant_parts}/${validationStats.total_parts}</div>
-                            </div>
-                            <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('all_validation');">Detayları Gör</button>
-                        </div>
-                        <div class="result-description">Tüm validation kurallarına uygun parçalar (${validationStats.overall_compliance_rate.toFixed(1)}%)</div>
-                    </div>
-                `;
-
-                // Required parameter violations
-                if (validationStats.required_param_violations > 0) {
-                    oslResultsHtml += `
-                        <div class="result-item error" onclick="openOSLModal('required_violations')">
-                            <div class="result-header">
-                                <div class="result-info">
-                                    <div class="result-title">Required Parametre Eksikleri</div>
-                                    <div class="result-count">${validationStats.required_param_violations}</div>
-                                </div>
-                                <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('required_violations');">Detayları Gör</button>
-                            </div>
-                            <div class="result-description">MODULE veya PART_FAMILY eksik olan parçalar</div>
-                        </div>
-                    `;
-                }
-
-                // Project parameter violations
-                if (validationStats.project_param_violations > 0) {
-                    oslResultsHtml += `
-                        <div class="result-item warning" onclick="openOSLModal('project_violations')">
-                            <div class="result-header">
-                                <div class="result-info">
-                                    <div class="result-title">PROJECT Parametre Eksikleri</div>
-                                    <div class="result-count">${validationStats.project_param_violations}</div>
-                                </div>
-                                <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('project_violations');">Detayları Gör</button>
-                            </div>
-                            <div class="result-description">PROJECT veya PROJECT1 eksik olan parçalar</div>
-                        </div>
-                    `;
-                }
-
-                // CK module violations
-                if (validationStats.ck_module_violations > 0) {
-                    oslResultsHtml += `
-                        <div class="result-item error" onclick="openOSLModal('ck_violations')">
-                            <div class="result-header">
-                                <div class="result-info">
-                                    <div class="result-title">CK Modülü Violation'ları</div>
-                                    <div class="result-count">${validationStats.ck_module_violations}</div>
-                                </div>
-                                <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('ck_violations');">Detayları Gör</button>
-                            </div>
-                            <div class="result-description">CK modülü için LABEL_POSITION/LABEL_TYPE eksik</div>
-                        </div>
-                    `;
-                }
-            }
-
-            if (oslResultsHtml === '') {
-                oslResultsHtml = `
-                    <div class="empty-state">
-                        <h3>⚙️ OSL analizi tamamlandı</h3>
-                        <p>Tüm validation kuralları başarılı, violation bulunamadı.</p>
-                    </div>
-                `;
-            }
-
-            document.getElementById('oslResults').innerHTML = oslResultsHtml;
         }
+
+        // CK module violations
+        if ((validationStats.ck_module_violations || 0) > 0) {
+            oslResultsHtml += `
+                <div class="result-item error" onclick="openOSLModal('ck_violations')">
+                    <div class="result-header">
+                        <div class="result-info">
+                            <div class="result-title">CK Modülü Violation'ları</div>
+                            <div class="result-count">${validationStats.ck_module_violations}</div>
+                        </div>
+                        <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('ck_violations');">Detayları Gör</button>
+                    </div>
+                    <div class="result-description">CK modülü için LABEL_POSITION/LABEL_TYPE eksik</div>
+                </div>
+            `;
+        }
+    }
+
+    if (oslResultsHtml === '') {
+        oslResultsHtml = `
+            <div class="empty-state">
+                <h3>⚙️ OSL analizi tamamlandı</h3>
+                <p>Tüm validation kuralları başarılı, violation bulunamadı.</p>
+            </div>
+        `;
+    }
+
+    const oslResultsElement = document.getElementById('oslResults');
+    if (oslResultsElement) {
+        oslResultsElement.innerHTML = oslResultsHtml;
+        console.log('✅ OSL results updated');
+    }
+}
+
+
 
         // Update compliance overview
         function updateComplianceOverview(analysisData) {
-            if (analysisData.osl_analysis_results.validation_statistics) {
-                const stats = analysisData.osl_analysis_results.validation_statistics;
-                const score = stats.overall_compliance_rate;
-                
-                // Update score circle
-                updateScoreCircle(score);
-                document.getElementById('scoreText').textContent = `${score.toFixed(0)}%`;
-                
-                // Update breakdown
-                const breakdownHtml = `
-                    <div class="breakdown-item">
-                        <span class="breakdown-label">Required Parametreler</span>
-                        <span class="breakdown-value ${stats.required_param_compliance_rate > 90 ? 'success' : 'error'}">${stats.required_param_compliance_rate.toFixed(1)}%</span>
-                    </div>
-                    <div class="breakdown-item">
-                        <span class="breakdown-label">PROJECT Parametreleri</span>
-                        <span class="breakdown-value ${stats.project_compliance_rate > 90 ? 'success' : 'warning'}">${stats.project_compliance_rate.toFixed(1)}%</span>
-                    </div>
-                    <div class="breakdown-item">
-                        <span class="breakdown-label">CK Modül Uyumluluğu</span>
-                        <span class="breakdown-value ${stats.ck_compliance_rate > 80 ? 'success' : 'error'}">${stats.ck_compliance_rate.toFixed(1)}%</span>
-                    </div>
-                `;
-                document.getElementById('complianceBreakdown').innerHTML = breakdownHtml;
-                
-                // Update CK stats
-                const ckStatsHtml = `
-                    <div class="ck-stat">
-                        <span class="ck-stat-label">CK Modülü Parça:</span>
-                        <span class="ck-stat-value">${stats.ck_module_parts}</span>
-                    </div>
-                    <div class="ck-stat">
-                        <span class="ck-stat-label">CK Violation:</span>
-                        <span class="ck-stat-value">${stats.ck_module_violations}</span>
-                    </div>
-                    <div class="ck-stat">
-                        <span class="ck-stat-label">CK Uyumluluk:</span>
-                        <span class="ck-stat-value">${stats.ck_compliance_rate.toFixed(1)}%</span>
-                    </div>
-                `;
-                document.getElementById('ckStats').innerHTML = ckStatsHtml;
-            }
-        }
-
-        // Update score circle visual
-        function updateScoreCircle(score) {
-            const circle = document.getElementById('scoreCircle');
-            const degrees = (score / 100) * 360;
-            let color = '#f87171'; // Error red
+    console.log('🎨 Updating compliance overview');
+    
+    try {
+        if (analysisData.osl_analysis_results && analysisData.osl_analysis_results.validation_statistics) {
+            const stats = analysisData.osl_analysis_results.validation_statistics;
+            const score = stats.overall_compliance_rate || 0;
             
-            if (score > 80) color = '#4ade80'; // Success green
-            else if (score > 60) color = '#fb923c'; // Warning orange
-            
-            circle.style.background = `conic-gradient(${color} 0deg, ${color} ${degrees}deg, #2a2a2a ${degrees}deg)`;
-        }
-
-        // Modal functions for TEI results
-        function openTEIModal(type) {
-            if (!currentAnalysisData) return;
-            
-            const modal = document.getElementById('detailModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const searchInput = document.getElementById('searchInput');
-            
-            let titleText = '';
-            let data = [];
-            
-            const teiResults = currentAnalysisData.tei_analysis_results;
-            
-            switch (type) {
-                case 'found':
-                    titleText = `TEI'de Bulunan Parçalar (${teiResults.found_in_tei.length})`;
-                    data = teiResults.found_in_tei;
-                    break;
-                case 'not_found':
-                    titleText = `TEI'de Bulunamayan Parçalar (${teiResults.not_found_in_tei.length})`;
-                    data = teiResults.not_found_in_tei.map(part => ({ vpl_part_reference: part }));
-                    break;
-                case 'inner_ref_errors':
-                    titleText = `Inner Reference Hataları (${teiResults.inner_reference_incorrect.length})`;
-                    data = teiResults.inner_reference_incorrect;
-                    break;
-                case 'missing_desc':
-                    titleText = `Eksik Açıklamalar (${teiResults.missing_description.length})`;
-                    data = teiResults.missing_description;
-                    break;
+            // Score circle güncelle
+            updateScoreCircle(score);
+            const scoreElement = document.getElementById('scoreText');
+            if (scoreElement) {
+                scoreElement.textContent = `${score.toFixed(0)}%`;
             }
             
-            modalTitle.textContent = titleText;
-            searchInput.value = '';
-            searchInput.placeholder = '🔍 Part referansı ara...';
+            // Breakdown güncelle
+            const breakdownHtml = `
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Required Parametreler</span>
+                    <span class="breakdown-value ${(stats.required_param_compliance_rate || 0) > 90 ? 'success' : 'error'}">${(stats.required_param_compliance_rate || 0).toFixed(1)}%</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">PROJECT Parametreleri</span>
+                    <span class="breakdown-value ${(stats.project_compliance_rate || 0) > 90 ? 'success' : 'warning'}">${(stats.project_compliance_rate || 0).toFixed(1)}%</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">CK Modül Uyumluluğu</span>
+                    <span class="breakdown-value ${(stats.ck_compliance_rate || 0) > 80 ? 'success' : 'error'}">${(stats.ck_compliance_rate || 0).toFixed(1)}%</span>
+                </div>
+            `;
             
-            currentModalData = { type: 'tei', subtype: type, data: data };
-            renderTEIModalContent(data);
+            const breakdownElement = document.getElementById('complianceBreakdown');
+            if (breakdownElement) {
+                breakdownElement.innerHTML = breakdownHtml;
+            }
             
-            searchInput.oninput = () => filterTEIModalContent(searchInput.value);
-            modal.classList.add('show');
+            // CK stats güncelle
+            const ckStatsHtml = `
+                <div class="ck-stat">
+                    <span class="ck-stat-label">CK Modülü Parça:</span>
+                    <span class="ck-stat-value">${stats.ck_module_parts || 0}</span>
+                </div>
+                <div class="ck-stat">
+                    <span class="ck-stat-label">CK Violation:</span>
+                    <span class="ck-stat-value">${stats.ck_module_violations || 0}</span>
+                </div>
+                <div class="ck-stat">
+                    <span class="ck-stat-label">CK Uyumluluk:</span>
+                    <span class="ck-stat-value">${(stats.ck_compliance_rate || 0).toFixed(1)}%</span>
+                </div>
+            `;
+            
+            const ckStatsElement = document.getElementById('ckStats');
+            if (ckStatsElement) {
+                ckStatsElement.innerHTML = ckStatsHtml;
+            }
+            
+            console.log('✅ Compliance overview updated');
+        } else {
+            console.warn('⚠️ No validation statistics found for compliance overview');
         }
+    } catch (error) {
+        console.error('❌ Error updating compliance overview:', error);
+    }
+}
 
         // Modal functions for OSL results
         function openOSLModal(type) {
@@ -1512,23 +1873,33 @@
 
         // Loading and error states
         function showLoadingState() {
-            document.getElementById('teiStats').innerHTML = '<div class="loading">TEI istatistikleri yükleniyor...</div>';
-            document.getElementById('teiResults').innerHTML = '<div class="loading">TEI sonuçları yükleniyor...</div>';
-            document.getElementById('oslStats').innerHTML = '<div class="loading">OSL istatistikleri yükleniyor...</div>';
-            document.getElementById('oslResults').innerHTML = '<div class="loading">OSL sonuçları yükleniyor...</div>';
-        }
+    const loadingHtml = '<div class="loading">Analiz verisi yükleniyor...</div>';
+    
+    const teiStats = document.getElementById('teiStats');
+    const teiResults = document.getElementById('teiResults');
+    const oslStats = document.getElementById('oslStats');
+    const oslResults = document.getElementById('oslResults');
+    
+    if (teiStats) teiStats.innerHTML = loadingHtml;
+    if (teiResults) teiResults.innerHTML = loadingHtml;
+    if (oslStats) oslStats.innerHTML = loadingHtml;
+    if (oslResults) oslResults.innerHTML = loadingHtml;
+}
 
         function showErrorState(message) {
-            const errorHtml = `
-                <div class="empty-state">
-                    <h3>⚠️ Veri Yüklenemedi</h3>
-                    <p>${message}</p>
-                </div>
-            `;
-            
-            document.getElementById('teiResults').innerHTML = errorHtml;
-            document.getElementById('oslResults').innerHTML = errorHtml;
-        }
+    const errorHtml = `
+        <div class="empty-state">
+            <h3>⚠️ Veri Yüklenemedi</h3>
+            <p>${message}</p>
+        </div>
+    `;
+    
+    const teiResults = document.getElementById('teiResults');
+    const oslResults = document.getElementById('oslResults');
+    
+    if (teiResults) teiResults.innerHTML = errorHtml;
+    if (oslResults) oslResults.innerHTML = errorHtml;
+}
 
         // Navigation functions
         function goBack() {
