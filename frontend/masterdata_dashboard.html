@@ -881,19 +881,22 @@
 }
 
         // Update masterdata display with real data
-       function updateMasterdataDisplay(analysisData) {
+     // Mevcut updateMasterdataDisplay fonksiyonunun başına bu satırı ekleyin:
+function updateMasterdataDisplay(analysisData) {
     console.log('🎨 Updating masterdata display with:', analysisData);
     
+    // ✅ FIX: Set global variable for modal access
+    currentAnalysisData = analysisData;
+    console.log('✅ currentAnalysisData set:', !!currentAnalysisData);
+    
     try {
-        // TEI analysis güncelle
+        // Mevcut kod devam ediyor...
         updateTEIAnalysis(analysisData.tei_analysis_results);
         console.log('✅ TEI analysis updated');
         
-        // OSL analysis güncelle
         updateOSLAnalysis(analysisData.osl_analysis_results);
         console.log('✅ OSL analysis updated');
         
-        // Compliance overview güncelle
         updateComplianceOverview(analysisData);
         console.log('✅ Compliance overview updated');
         
@@ -902,7 +905,6 @@
         showErrorState('Veri gösterilirken hata oluştu: ' + error.message);
     }
 }
-
 function updateActiveDate(date) {
     // Date card'ları güncelle
     document.querySelectorAll('.date-card').forEach(card => {
@@ -975,21 +977,36 @@ function formatDateTurkish(date) {
 
 // 10. Modal functions for TEI results
 function openTEIModal(type) {
-    if (!currentAnalysisData) return;
+    console.log('🔍 Opening TEI modal for type:', type, 'Data available:', !!currentAnalysisData);
+    
+    if (!currentAnalysisData || !currentAnalysisData.tei_analysis_results) {
+        console.error('❌ No TEI analysis data available');
+        alert('TEI analiz verisi bulunamadı. Lütfen önce analiz çalıştırın.');
+        return;
+    }
     
     const modal = document.getElementById('detailModal');
     const modalTitle = document.getElementById('modalTitle');
     const searchInput = document.getElementById('searchInput');
     
+    if (!modal || !modalTitle || !searchInput) {
+        console.error('❌ Modal elements not found in DOM');
+        return;
+    }
+    
     let titleText = '';
     let data = [];
     
     const teiResults = currentAnalysisData.tei_analysis_results;
+    console.log('📊 TEI Results keys:', Object.keys(teiResults));
     
     switch (type) {
         case 'not_found':
             titleText = `TEI'de Bulunamayan Parçalar (${teiResults.not_found_in_tei?.length || 0})`;
-            data = (teiResults.not_found_in_tei || []).map(part => ({ vpl_part_reference: part }));
+            data = (teiResults.not_found_in_tei || []).map(part => ({ 
+                vpl_part_reference: part,
+                status: 'TEI\'de bulunamadı'
+            }));
             break;
         case 'inner_ref_errors':
             titleText = `Inner Reference Hataları (${teiResults.inner_reference_incorrect?.length || 0})`;
@@ -999,7 +1016,12 @@ function openTEIModal(type) {
             titleText = `Eksik Açıklamalar (${teiResults.missing_description?.length || 0})`;
             data = teiResults.missing_description || [];
             break;
+        default:
+            console.error('❌ Unknown TEI modal type:', type);
+            return;
     }
+    
+    console.log('📊 Modal data prepared:', data.length, 'items');
     
     modalTitle.textContent = titleText;
     searchInput.value = '';
@@ -1008,22 +1030,41 @@ function openTEIModal(type) {
     currentModalData = { type: 'tei', subtype: type, data: data };
     renderTEIModalContent(data);
     
-    searchInput.oninput = () => filterTEIModalContent(searchInput.value);
+    // Clear previous event listeners and set new ones
+    searchInput.onkeyup = null;
+    searchInput.oninput = null;
+    searchInput.addEventListener('input', function() {
+        filterTEIModalContent(this.value);
+    });
+    
     modal.classList.add('show');
+    console.log('✅ TEI Modal opened successfully');
 }
 
 // 11. Modal functions for OSL results
 function openOSLModal(type) {
-    if (!currentAnalysisData) return;
+    console.log('🔍 Opening OSL modal for type:', type, 'Data available:', !!currentAnalysisData);
+    
+    if (!currentAnalysisData || !currentAnalysisData.osl_analysis_results) {
+        console.error('❌ No OSL analysis data available');
+        alert('OSL analiz verisi bulunamadı. Lütfen önce analiz çalıştırın.');
+        return;
+    }
     
     const modal = document.getElementById('detailModal');
     const modalTitle = document.getElementById('modalTitle');
     const searchInput = document.getElementById('searchInput');
     
+    if (!modal || !modalTitle || !searchInput) {
+        console.error('❌ Modal elements not found in DOM');
+        return;
+    }
+    
     let titleText = '';
     let data = [];
     
     const oslResults = currentAnalysisData.osl_analysis_results;
+    console.log('📊 OSL Results keys:', Object.keys(oslResults));
     
     if (oslResults.validation_results) {
         switch (type) {
@@ -1035,14 +1076,23 @@ function openOSLModal(type) {
                 titleText = `Required Parametre Violation'ları`;
                 data = oslResults.validation_results.filter(r => 
                     r.required_compliance && !r.required_compliance.is_compliant);
+                titleText += ` (${data.length})`;
                 break;
             case 'ck_violations':
                 titleText = `CK Modülü Violation'ları`;
                 data = oslResults.validation_results.filter(r => 
-                    r.ck_module_compliance && r.ck_module_compliance.is_ck_module && !r.ck_module_compliance.is_compliant);
+                    r.ck_module_compliance && 
+                    r.ck_module_compliance.is_ck_module && 
+                    !r.ck_module_compliance.is_compliant);
+                titleText += ` (${data.length})`;
                 break;
+            default:
+                console.error('❌ Unknown OSL modal type:', type);
+                return;
         }
     }
+    
+    console.log('📊 Modal data prepared:', data.length, 'items');
     
     modalTitle.textContent = titleText;
     searchInput.value = '';
@@ -1051,14 +1101,25 @@ function openOSLModal(type) {
     currentModalData = { type: 'osl', subtype: type, data: data };
     renderOSLModalContent(data);
     
-    searchInput.oninput = () => filterOSLModalContent(searchInput.value);
+    // Clear previous event listeners and set new ones
+    searchInput.onkeyup = null;
+    searchInput.oninput = null;
+    searchInput.addEventListener('input', function() {
+        filterOSLModalContent(this.value);
+    });
+    
     modal.classList.add('show');
+    console.log('✅ OSL Modal opened successfully');
 }
-
 // 12. Render TEI modal content
 function renderTEIModalContent(data) {
     const modalBody = document.getElementById('modalBody');
     const resultsCount = document.getElementById('resultsCount');
+    
+    if (!modalBody || !resultsCount) {
+        console.error('❌ Modal body elements not found');
+        return;
+    }
     
     if (!data || data.length === 0) {
         modalBody.innerHTML = '<div class="empty-state"><h3>Sonuç bulunamadı</h3></div>';
@@ -1089,13 +1150,16 @@ function renderTEIModalContent(data) {
                 </div>
             `;
         } else {
-            // Object data (found items, validation errors, etc.)
+            // Object data
             let statusClass = 'success';
             let statusText = 'Uyumlu';
             
             if (item.error_reason) {
                 statusClass = 'error';
                 statusText = 'Hata';
+            } else if (item.status && item.status.includes('bulunamadı')) {
+                statusClass = 'error';
+                statusText = item.status;
             } else if (!item.description_exists) {
                 statusClass = 'warning';
                 statusText = 'Eksik açıklama';
@@ -1103,15 +1167,19 @@ function renderTEIModalContent(data) {
             
             contentHtml += `
                 <div class="modal-item">
-                    <div class="modal-item-header">${item.vpl_part_reference || item.customer_reference}</div>
+                    <div class="modal-item-header">${item.vpl_part_reference || item.customer_reference || 'Part ' + (index + 1)}</div>
                     <div class="modal-item-content">
                         <div class="modal-item-field">
                             <span class="field-label">Customer Reference:</span>
-                            <span class="field-value">${item.customer_reference || '-'}</span>
+                            <span class="field-value">${item.customer_reference || item.vpl_part_reference || '-'}</span>
                         </div>
                         <div class="modal-item-field">
                             <span class="field-label">Inner Reference:</span>
                             <span class="field-value">${item.inner_reference || '-'}</span>
+                        </div>
+                        <div class="modal-item-field">
+                            <span class="field-label">Part Açıklaması:</span>
+                            <span class="field-value">${item.part_description || 'Yok'}</span>
                         </div>
                         <div class="modal-item-field">
                             <span class="field-label">Durum:</span>
@@ -1139,12 +1207,16 @@ function renderTEIModalContent(data) {
     });
     
     modalBody.innerHTML = contentHtml;
+    console.log('✅ TEI Modal content rendered:', data.length, 'items');
 }
-
-// 13. Render OSL modal content
 function renderOSLModalContent(data) {
     const modalBody = document.getElementById('modalBody');
     const resultsCount = document.getElementById('resultsCount');
+    
+    if (!modalBody || !resultsCount) {
+        console.error('❌ Modal body elements not found');
+        return;
+    }
     
     if (!data || data.length === 0) {
         modalBody.innerHTML = '<div class="empty-state"><h3>Sonuç bulunamadı</h3></div>';
@@ -1162,7 +1234,7 @@ function renderOSLModalContent(data) {
         
         contentHtml += `
             <div class="modal-item">
-                <div class="modal-item-header">${item.inner_reference}</div>
+                <div class="modal-item-header">${item.inner_reference || 'Inner Ref ' + (index + 1)}</div>
                 <div class="modal-item-content">
                     <div class="modal-item-field">
                         <span class="field-label">Compliance Score:</span>
@@ -1179,6 +1251,14 @@ function renderOSLModalContent(data) {
                     <div class="modal-item-field">
                         <span class="field-label">PART_FAMILY:</span>
                         <span class="field-value ${item.required_compliance?.has_part_family ? 'success' : 'error'}">${item.required_compliance?.part_family_value || 'Yok'}</span>
+                    </div>
+                    <div class="modal-item-field">
+                        <span class="field-label">PROJECT:</span>
+                        <span class="field-value ${item.project_compliance?.has_project ? 'success' : 'warning'}">${item.project_compliance?.project_value || 'Yok'}</span>
+                    </div>
+                    <div class="modal-item-field">
+                        <span class="field-label">PROJECT1:</span>
+                        <span class="field-value ${item.project_compliance?.has_project1 ? 'success' : 'warning'}">${item.project_compliance?.project1_value || 'Yok'}</span>
                     </div>
                     ${item.ck_module_compliance?.is_ck_module ? `
                         <div class="modal-item-field">
@@ -1201,6 +1281,7 @@ function renderOSLModalContent(data) {
     });
     
     modalBody.innerHTML = contentHtml;
+    console.log('✅ OSL Modal content rendered:', data.length, 'items');
 }
 
 // 14. Filter modal content functions
@@ -1218,9 +1299,14 @@ function filterTEIModalContent(searchTerm) {
         if (typeof item === 'string') {
             return item.toLowerCase().includes(searchTerm.toLowerCase());
         } else {
-            return (item.vpl_part_reference && item.vpl_part_reference.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                   (item.customer_reference && item.customer_reference.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                   (item.inner_reference && item.inner_reference.toLowerCase().includes(searchTerm.toLowerCase()));
+            const searchIn = [
+                item.vpl_part_reference,
+                item.customer_reference,
+                item.inner_reference,
+                item.part_description
+            ].filter(Boolean).join(' ').toLowerCase();
+            
+            return searchIn.includes(searchTerm.toLowerCase());
         }
     });
     
@@ -1238,19 +1324,21 @@ function filterOSLModalContent(searchTerm) {
     }
     
     const filteredData = originalData.filter(item => 
+        item.inner_reference && 
         item.inner_reference.toLowerCase().includes(searchTerm.toLowerCase())
     );
     
     renderOSLModalContent(filteredData);
 }
-
-// 15. Close modal and global variables
-
 function closeModal() {
     const modal = document.getElementById('detailModal');
-    modal.classList.remove('show');
+    if (modal) {
+        modal.classList.remove('show');
+    }
     currentModalData = null;
+    console.log('✅ Modal closed');
 }
+
 function updateActiveDate(date) {
     // Date card'ları güncelle
     document.querySelectorAll('.date-card').forEach(card => {
@@ -1316,19 +1404,19 @@ function updateTEIAnalysis(teiResults) {
         console.log('✅ TEI stats updated');
     }
 
-    // TEI results güncelle
+    // TEI results güncelle - FIX: onclick events properly bound
     let teiResultsHtml = '';
     
     // TEI'de bulunamayan parçalar
     if (teiResults.not_found_in_tei && teiResults.not_found_in_tei.length > 0) {
         teiResultsHtml += `
-            <div class="result-item error" onclick="openTEIModal('not_found')">
+            <div class="result-item error">
                 <div class="result-header">
                     <div class="result-info">
                         <div class="result-title">TEI'de Bulunamayan Parçalar</div>
                         <div class="result-count">${teiResults.not_found_in_tei.length}</div>
                     </div>
-                    <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('not_found');">Detayları Gör</button>
+                    <button class="details-btn" onclick="openTEIModal('not_found')">Detayları Gör</button>
                 </div>
                 <div class="result-description">TEI dosyasında karşılığı bulunmayan VPL parçaları</div>
             </div>
@@ -1338,13 +1426,13 @@ function updateTEIAnalysis(teiResults) {
     // Inner Reference hataları
     if (teiResults.inner_reference_incorrect && teiResults.inner_reference_incorrect.length > 0) {
         teiResultsHtml += `
-            <div class="result-item warning" onclick="openTEIModal('inner_ref_errors')">
+            <div class="result-item warning">
                 <div class="result-header">
                     <div class="result-info">
                         <div class="result-title">Inner Reference Hataları</div>
                         <div class="result-count">${teiResults.inner_reference_incorrect.length}</div>
                     </div>
-                    <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('inner_ref_errors');">Detayları Gör</button>
+                    <button class="details-btn" onclick="openTEIModal('inner_ref_errors')">Detayları Gör</button>
                 </div>
                 <div class="result-description">Yanlış inner reference formatına sahip parçalar</div>
             </div>
@@ -1354,13 +1442,13 @@ function updateTEIAnalysis(teiResults) {
     // Eksik açıklamalar
     if (teiResults.missing_description && teiResults.missing_description.length > 0) {
         teiResultsHtml += `
-            <div class="result-item warning" onclick="openTEIModal('missing_desc')">
+            <div class="result-item warning">
                 <div class="result-header">
                     <div class="result-info">
                         <div class="result-title">Eksik Açıklamalar</div>
                         <div class="result-count">${teiResults.missing_description.length}</div>
                     </div>
-                    <button class="details-btn" onclick="event.stopPropagation(); openTEIModal('missing_desc');">Detayları Gör</button>
+                    <button class="details-btn" onclick="openTEIModal('missing_desc')">Detayları Gör</button>
                 </div>
                 <div class="result-description">Açıklama bilgisi eksik olan parçalar</div>
             </div>
@@ -1382,9 +1470,8 @@ function updateTEIAnalysis(teiResults) {
         console.log('✅ TEI results updated');
     }
 }
-
         // Update OSL analysis section  
-        function updateOSLAnalysis(oslResults) {
+     function updateOSLAnalysis(oslResults) {
     console.log('🎨 Updating OSL analysis:', oslResults);
     
     if (!oslResults || !oslResults.statistics) {
@@ -1421,7 +1508,7 @@ function updateTEIAnalysis(teiResults) {
         console.log('✅ OSL stats updated');
     }
 
-    // OSL results güncelle
+    // OSL results güncelle - FIX: onclick events properly bound
     let oslResultsHtml = '';
     
     if (oslResults.validation_statistics) {
@@ -1429,13 +1516,13 @@ function updateTEIAnalysis(teiResults) {
         
         // Genel uyumluluk
         oslResultsHtml += `
-            <div class="result-item ${(validationStats.overall_compliance_rate || 0) > 80 ? 'success' : 'warning'}" onclick="openOSLModal('all_validation')">
+            <div class="result-item ${(validationStats.overall_compliance_rate || 0) > 80 ? 'success' : 'warning'}">
                 <div class="result-header">
                     <div class="result-info">
                         <div class="result-title">Genel Uyumluluk</div>
                         <div class="result-count">${validationStats.fully_compliant_parts || 0}/${validationStats.total_parts || 0}</div>
                     </div>
-                    <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('all_validation');">Detayları Gör</button>
+                    <button class="details-btn" onclick="openOSLModal('all_validation')">Detayları Gör</button>
                 </div>
                 <div class="result-description">Tüm validation kurallarına uygun parçalar (${(validationStats.overall_compliance_rate || 0).toFixed(1)}%)</div>
             </div>
@@ -1444,13 +1531,13 @@ function updateTEIAnalysis(teiResults) {
         // Required parametre violations
         if ((validationStats.required_param_violations || 0) > 0) {
             oslResultsHtml += `
-                <div class="result-item error" onclick="openOSLModal('required_violations')">
+                <div class="result-item error">
                     <div class="result-header">
                         <div class="result-info">
                             <div class="result-title">Required Parametre Eksikleri</div>
                             <div class="result-count">${validationStats.required_param_violations}</div>
                         </div>
-                        <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('required_violations');">Detayları Gör</button>
+                        <button class="details-btn" onclick="openOSLModal('required_violations')">Detayları Gör</button>
                     </div>
                     <div class="result-description">MODULE veya PART_FAMILY eksik olan parçalar</div>
                 </div>
@@ -1460,13 +1547,13 @@ function updateTEIAnalysis(teiResults) {
         // CK module violations
         if ((validationStats.ck_module_violations || 0) > 0) {
             oslResultsHtml += `
-                <div class="result-item error" onclick="openOSLModal('ck_violations')">
+                <div class="result-item error">
                     <div class="result-header">
                         <div class="result-info">
                             <div class="result-title">CK Modülü Violation'ları</div>
                             <div class="result-count">${validationStats.ck_module_violations}</div>
                         </div>
-                        <button class="details-btn" onclick="event.stopPropagation(); openOSLModal('ck_violations');">Detayları Gör</button>
+                        <button class="details-btn" onclick="openOSLModal('ck_violations')">Detayları Gör</button>
                     </div>
                     <div class="result-description">CK modülü için LABEL_POSITION/LABEL_TYPE eksik</div>
                 </div>
@@ -1489,6 +1576,7 @@ function updateTEIAnalysis(teiResults) {
         console.log('✅ OSL results updated');
     }
 }
+
 
 
 
@@ -1806,70 +1894,79 @@ function updateTEIAnalysis(teiResults) {
         }
 
         // Apply filter
-        function applyFilter() {
-            const filterValue = document.getElementById('filterSelect').value;
-            
-            if (!currentModalData) return;
-            
-            let filteredData = currentModalData.data;
-            
-            if (currentModalData.type === 'osl' && filterValue !== 'all') {
-                if (filterValue === 'violations') {
-                    filteredData = currentModalData.data.filter(item => !item.overall_compliance);
-                } else if (filterValue === 'compliant') {
-                    filteredData = currentModalData.data.filter(item => item.overall_compliance);
-                }
-            }
-            
-            if (currentModalData.type === 'tei') {
-                renderTEIModalContent(filteredData);
-            } else {
-                renderOSLModalContent(filteredData);
-            }
+        // 6. Modal Filter Functions - Fixed
+function applyFilter() {
+    const filterValue = document.getElementById('filterSelect').value;
+    
+    if (!currentModalData) return;
+    
+    let filteredData = currentModalData.data;
+    
+    if (currentModalData.type === 'osl' && filterValue !== 'all') {
+        if (filterValue === 'violations') {
+            filteredData = currentModalData.data.filter(item => !item.overall_compliance);
+        } else if (filterValue === 'compliant') {
+            filteredData = currentModalData.data.filter(item => item.overall_compliance);
         }
+    }
+    
+    if (currentModalData.type === 'tei') {
+        renderTEIModalContent(filteredData);
+    } else {
+        renderOSLModalContent(filteredData);
+    }
+}
 
-        // Close modal
         function closeModal() {
-            const modal = document.getElementById('detailModal');
-            modal.classList.remove('show');
-            currentModalData = null;
-        }
+    const modal = document.getElementById('detailModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+    currentModalData = null;
+    console.log('✅ Modal closed');
+}
 
         // Export modal data to CSV
         function exportModalData() {
-            if (!currentModalData) return;
-            
-            let csvContent = '';
-            let filename = `masterdata_${currentModalData.type}_${new Date().toISOString().split('T')[0]}.csv`;
-            
-            if (currentModalData.type === 'tei') {
-                csvContent = 'VPL Reference,Customer Reference,Inner Reference,Part Description,Status\n';
-                currentModalData.data.forEach(item => {
-                    if (typeof item === 'string') {
-                        csvContent += `"${item}","","","","TEI'de bulunamadı"\n`;
-                    } else {
-                        csvContent += `"${item.vpl_part_reference || ''}","${item.customer_reference || ''}","${item.inner_reference || ''}","${item.part_description || ''}","${item.error_reason || 'Uyumlu'}"\n`;
-                    }
-                });
-            } else if (currentModalData.type === 'osl') {
-                csvContent = 'Inner Reference,Compliance Score,Overall Status,MODULE,PART_FAMILY,PROJECT,PROJECT1,Violations\n';
-                currentModalData.data.forEach(item => {
-                    const violations = item.violation_reasons ? item.violation_reasons.join('; ') : '';
-                    csvContent += `"${item.inner_reference}","${item.compliance_score?.toFixed(1) || 0}%","${item.overall_compliance ? 'Uyumlu' : 'Violation'}","${item.required_compliance?.module_value || ''}","${item.required_compliance?.part_family_value || ''}","${item.project_compliance?.project_value || ''}","${item.project_compliance?.project1_value || ''}","${violations}"\n`;
-                });
+    if (!currentModalData || !currentModalData.data) {
+        alert('Export edilecek veri bulunamadı');
+        return;
+    }
+    
+    let csvContent = '';
+    let filename = `masterdata_${currentModalData.type}_${new Date().toISOString().split('T')[0]}.csv`;
+    
+    if (currentModalData.type === 'tei') {
+        csvContent = 'VPL Reference,Customer Reference,Inner Reference,Part Description,Status\n';
+        currentModalData.data.forEach(item => {
+            if (typeof item === 'string') {
+                csvContent += `"${item}","","","","TEI'de bulunamadı"\n`;
+            } else {
+                const status = item.error_reason || item.status || 'Uyumlu';
+                csvContent += `"${item.vpl_part_reference || ''}","${item.customer_reference || ''}","${item.inner_reference || ''}","${item.part_description || ''}","${status}"\n`;
             }
-            
-            // Create and download file
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', filename);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+        });
+    } else if (currentModalData.type === 'osl') {
+        csvContent = 'Inner Reference,Compliance Score,Overall Status,MODULE,PART_FAMILY,PROJECT,PROJECT1,Violations\n';
+        currentModalData.data.forEach(item => {
+            const violations = item.violation_reasons ? item.violation_reasons.join('; ') : '';
+            csvContent += `"${item.inner_reference || ''}","${item.compliance_score?.toFixed(1) || 0}%","${item.overall_compliance ? 'Uyumlu' : 'Violation'}","${item.required_compliance?.module_value || ''}","${item.required_compliance?.part_family_value || ''}","${item.project_compliance?.project_value || ''}","${item.project_compliance?.project1_value || ''}","${violations}"\n`;
+        });
+    }
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('✅ Data exported:', filename);
+}
 
         // Loading and error states
         function showLoadingState() {

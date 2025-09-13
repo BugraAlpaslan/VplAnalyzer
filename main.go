@@ -581,28 +581,27 @@ func readOSLFile(filePath string) (map[string]map[string]string, error) {
 
 // VPL satırını parse etme
 func parseVPLRecord(line string) (VPLRecord, error) {
+
 	line = strings.TrimPrefix(line, "VPLIST")
-	fields := strings.Fields(line)
 
-	if len(fields) < 4 {
-		return VPLRecord{}, fmt.Errorf("invalid VPL record format: insufficient fields")
-	}
+	vin := line[:VIN_LENGTH]
+	remaining := strings.TrimSpace(line[VIN_LENGTH:])
 
-	vinAndPrefix := fields[0]
-	if len(vinAndPrefix) < VIN_LENGTH {
-		return VPLRecord{}, fmt.Errorf("invalid VIN length: %d", len(vinAndPrefix))
-	}
+	re := regexp.MustCompile(`^(\S+)\s+(\S+)\s+(\S+)\s+([\d.]+)`)
+	matches := re.FindStringSubmatch(remaining)
 
-	vin := vinAndPrefix[:VIN_LENGTH]
-	prefix := vinAndPrefix[VIN_LENGTH:]
+	prefix := matches[1]
+	base := matches[2]
+	suffix := matches[3]
+	quantity := matches[4]
 
 	record := VPLRecord{
 		VIN:      vin,
 		Prefix:   prefix,
-		Base:     fields[1],
-		Suffix:   fields[2],
-		Quantity: fields[3],
-		PartName: prefix + fields[1] + fields[2], // Prefix + Base + Suffix
+		Base:     base,
+		Suffix:   suffix,
+		Quantity: quantity,
+		PartName: prefix + base + suffix,
 	}
 
 	// Detect project from VIN
@@ -611,7 +610,7 @@ func parseVPLRecord(line string) (VPLRecord, error) {
 	} else if strings.HasPrefix(record.VIN, TAR_PREFIX) {
 		record.DetectedProject = "J74_PROJECT"
 	} else {
-		record.DetectedProject = "DEFAULT_PROJECT"
+		record.DetectedProject = "SECRET_PROJECT"
 	}
 
 	return record, nil
@@ -1015,22 +1014,30 @@ func hasRequiredPart(vinParts []VPLRecord, requiredPart string) bool {
 
 var seen = make(map[string]bool)
 
+// VPL record'dan doğru customer reference çıkarma
 func extractCustomerReferences(vplRecords []VPLRecord) []string {
 	var customerRefs []string
-	seen := make(map[string]bool) // Reset seen map
+	seen := make(map[string]bool)
 
 	for _, record := range vplRecords {
-		// VPL'deki ayrı parçaları boşlukla birleştir (TEI formatına uygun)
+		// ✅ FIX: VPL'deki PREFIX + BASE + SUFFIX formatını kullan
+		// Önceki: "MPZ31 13A756 AA" formatında
+		// Şimdi: Doğru format ile
 		customerRef := fmt.Sprintf("%s %s %s", record.Prefix, record.Base, record.Suffix)
 
 		if !seen[customerRef] {
 			customerRefs = append(customerRefs, customerRef)
 			seen[customerRef] = true
-			log.Printf("VPL Customer Ref extracted: '%s'", customerRef)
+
+			// Debug için ilk 10'u logla
+			if len(customerRefs) <= 10 {
+				log.Printf("VPL Customer Ref extracted %d: '%s' (Prefix:'%s' Base:'%s' Suffix:'%s')",
+					len(customerRefs), customerRef, record.Prefix, record.Base, record.Suffix)
+			}
 		}
 	}
 
-	log.Printf("📊 Extracted %d unique customer references", len(customerRefs))
+	log.Printf("📊 Extracted %d unique customer references from %d VPL records", len(customerRefs), len(vplRecords))
 	return customerRefs
 }
 func formatCustomerReference(partName string) string {
@@ -1115,9 +1122,6 @@ func generateExpectedInnerReference(customerRef string) string {
 	cleaned := strings.ReplaceAll(customerRef, " ", "")
 
 	// W ile başlayanlar için E prefix ekle
-	if strings.HasPrefix(cleaned, "W") {
-		return "E" + cleaned
-	}
 
 	// Diğerleri için direkt return
 	return cleaned
