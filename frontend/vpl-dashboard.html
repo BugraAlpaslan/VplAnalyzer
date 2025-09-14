@@ -753,6 +753,42 @@
             padding-bottom: 10px;
             border-bottom: 1px solid #2a2a2a;
         }
+        /* Scroll bar colors - VPL Dashboard */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+::-webkit-scrollbar-corner {
+    background: #0a0a0a;
+}
+
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #2a2a2a #0a0a0a;
+}
+
+.main-content::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track,
+.right-sidebar::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+/* Animations */
 
         /* Animations */
         @keyframes spin {
@@ -782,6 +818,7 @@
             <h1>MSAS VPL Analyzer</h1>
         </div>
         <div class="header-buttons">
+            <button class="header-btn" onclick="App.goBackToSelection()">← Dashboard Selection</button>
             <button class="header-btn" onclick="App.openConfig()">Config</button>
             <button class="header-btn" id="manualAnalysisBtn" onclick="App.triggerManualAnalysis()">Manuel Analiz</button>
         </div>
@@ -1026,6 +1063,7 @@
             getCurrentAnalysis() {
                 return this.data.analysisData;
             },
+            
 
             getCurrentDate() {
                 return this.data.currentDate;
@@ -1084,6 +1122,66 @@
 
         const APIClient = {
             baseURL: '/api',
+async triggerManualAnalysis() {
+    console.log('🔨 Triggering manual analysis...');
+    
+    const button = document.getElementById('manualAnalysisBtn');
+    if (button) {
+        const originalText = button.textContent;
+        button.textContent = 'Analiz Yapılıyor...';
+        button.disabled = true;
+        
+        // ✅ Loading state - kullanıcıya net bilgi ver
+        LoadingComponent.show('#changesContainer', 
+            'Manuel analiz başlatıldı...\n\n' +
+            '1. Eski veriler temizleniyor\n' + 
+            '2. VPL dosyası okunuyor\n' +
+            '3. Karşılaştırma yapılıyor\n' +
+            '4. Sonuçlar kaydediliyor\n\n' +
+            'Lütfen bekleyin, işlem tamamlanana kadar sayfa değiştirmeyiniz.'
+        );
+        LoadingComponent.show('#missingPartsContainer', 'Analiz devam ediyor...');
+        
+        try {
+            // ✅ Backend sync olarak çalışacak, bekleme gerekli
+            const response = await APIClient.triggerManualAnalysis();
+            
+            if (response.success) {
+                console.log('✅ Manual analysis completed:', response.message);
+                
+                // ✅ Analiz bitti, yeni veriyi yükle
+                const today = DateUtils.formatISO(new Date());
+                console.log('🔄 Loading fresh analysis data for:', today);
+                
+                // Kısa bir delay sonra yeni veriyi yükle (cache temizlemek için)
+                setTimeout(() => {
+                    this.loadAnalysisForDate(today);
+                }, 500);
+                
+            } else {
+                throw new Error(response.message || 'Manual analysis failed');
+            }
+        } catch (error) {
+            console.error('❌ Manual analysis error:', error);
+            
+            if (error.message.includes('Failed to clear')) {
+                ErrorComponent.show('#changesContainer', 
+                    'Veritabanı temizleme hatası: ' + error.message + 
+                    '\n\nLütfen tekrar deneyin.');
+            } else if (error.message.includes('Analysis failed')) {
+                ErrorComponent.show('#changesContainer', 
+                    'Analiz hatası: ' + error.message +
+                    '\n\nDosyaların mevcut olduğundan emin olun.');
+            } else {
+                ErrorComponent.show('#changesContainer', 
+                    'Manuel analiz sırasında bir hata oluştu: ' + error.message);
+            }
+        } finally {
+            button.textContent = originalText;
+            button.disabled = false;
+        }
+    }
+},
 
             async fetchAnalysis(date) {
                 console.log('📡 Fetching analysis for date:', date);
@@ -1945,41 +2043,74 @@
             },
 
             async triggerManualAnalysis() {
-                console.log('🔨 Triggering manual analysis...');
+    const button = document.getElementById('manualAnalysisBtn');
+    const originalText = button.textContent;
+    
+    button.textContent = 'Analiz Ediliyor...';
+    button.disabled = true;
+    
+    // Loading göster
+    LoadingComponent.show('#changesContainer', 'Yeni analiz yapılıyor...');
+    
+    try {
+        await APIClient.triggerManualAnalysis();
+        
+        // Analiz bitene kadar bekle (polling)
+        await this.waitForAnalysisCompletion();
+        
+        // Analiz bitti, yeni veriyi yükle
+        const today = DateUtils.formatISO(new Date());
+        this.loadAnalysisForDate(today);
+        
+    } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+},
+async waitForAnalysisCompletion() {
+    console.log('⏳ Polling for analysis completion...');
+    
+    const today = DateUtils.formatISO(new Date());
+    let attempts = 0;
+    const maxAttempts = 10; // Maximum 30 saniye bekle (3x10)
+    
+    while (attempts < maxAttempts) {
+        attempts++;
+        console.log(`🔍 Checking analysis completion, attempt ${attempts}/${maxAttempts}`);
+        
+        try {
+            // Yeni analiz sonucu var mı kontrol et
+            const response = await APIClient.fetchAnalysis(today);
+            
+            if (response.success && response.data) {
+                const analysisData = ResponseNormalizer.normalizeAnalysis(response);
                 
-                const button = document.getElementById('manualAnalysisBtn');
-                if (button) {
-                    const originalText = button.textContent;
-                    button.textContent = 'Analiz Ediliyor...';
-                    button.disabled = true;
-                    
-                    try {
-                        const response = await APIClient.triggerManualAnalysis();
-                        
-                        if (response.success) {
-                            console.log('✅ Manual analysis completed');
-                            
-                            // Wait a moment then reload today's analysis
-                            const today = DateUtils.formatISO(new Date());
-                            setTimeout(() => {
-                                this.loadAnalysisForDate(today);
-                            }, 2000);
-                        } else {
-                            throw new Error(response.message || 'Manual analysis failed');
-                        }
-                    } catch (error) {
-                        console.error('❌ Manual analysis error:', error);
-                        alert('Manuel analiz sırasında bir hata oluştu: ' + error.message);
-                    } finally {
-                        button.textContent = originalText;
-                        button.disabled = false;
-                    }
+                // Eğer yeni veri geldi ise (issue sayısı değişti vs), analiz tamamlanmış demektir
+                const currentAnalysis = AppState.getCurrentAnalysis();
+                if (!currentAnalysis || 
+                    JSON.stringify(analysisData) !== JSON.stringify(currentAnalysis)) {
+                    console.log('✅ New analysis data detected, analysis completed');
+                    return true;
                 }
-            },
-
+            }
+        } catch (error) {
+            console.log(`❌ Polling attempt ${attempts} failed:`, error.message);
+        }
+        
+        // 3 saniye bekle
+        await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+    
+    console.log('⏰ Polling timeout, proceeding anyway');
+    return false;
+},
             openConfig() {
                 window.location.href = '/config';
             },
+            goBackToSelection() {
+              window.location.href = '/selection';
+            },
+
 
             // UI Update Methods
             updateAnalysisDisplay(analysisData) {

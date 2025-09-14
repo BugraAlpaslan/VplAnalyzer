@@ -650,13 +650,6 @@ func listAvailableFiles() {
 }
 
 // Belirli tarih için tüm dosyaları kontrol etme
-func checkFilesForDate(date string) (bool, bool, bool) {
-	vplFile := findVPLFileForDate(date)
-	teiFile := findTEIFileForDate(date)
-	oslFile := findOSLFileForDate(date)
-
-	return vplFile != "", teiFile != "", oslFile != ""
-}
 
 // =============================================================================
 // ANALYSIS FUNCTIONS (Main Logic - Single Pass Analysis)
@@ -1255,6 +1248,8 @@ func setupRoutes() {
 	// Static files
 	http.HandleFunc("/", handleStaticFiles)
 	http.HandleFunc("/login", handleStaticFiles)
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
+
 	http.HandleFunc("/selection", requireAuth(handleStaticFiles))
 	http.HandleFunc("/vpl-dashboard", requireAuth(handleStaticFiles))
 	http.HandleFunc("/masterdata-dashboard", requireAuth(handleStaticFiles))
@@ -1535,18 +1530,35 @@ func handleMasterDataManualAnalysis(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Bugünün tarihini al
 	today := time.Now().Format("2006-01-02")
 
-	// Bugünün tarihi için analiz yap
-	runCompleteAnalysis(today)
+	log.Printf("🔨 Manual masterdata analysis started for date: %s", today)
+
+	// ✅ Önce eski verileri temizle
+	_, err := db.Exec("DELETE FROM masterdata_issues WHERE date = ?", today)
+	if err != nil {
+		log.Printf("❌ Failed to clear old masterdata: %v", err)
+		sendError(w, "Failed to clear old data", http.StatusInternalServerError)
+		return
+	}
+	log.Printf("🗑️ Cleared old masterdata for date: %s", today)
+
+	// ✅ Analizi SYNC olarak çalıştır
+	if err := runCompleteAnalysis(today); err != nil {
+		log.Printf("❌ Manual masterdata analysis failed: %v", err)
+		sendError(w, "Analysis failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("✅ Manual masterdata analysis completed for date: %s", today)
 
 	sendJSON(w, APIResponse{
 		Success: true,
-		Message: "Manual masterdata analysis started for today: " + today,
+		Message: "Manual masterdata analysis completed successfully",
 		Data:    today,
 	})
 }
+
 func handleMasterDataIssues(w http.ResponseWriter, r *http.Request) {
 	date := strings.TrimPrefix(r.URL.Path, "/api/masterdata/issues/")
 	if date == "" || !validateInput(date) {
@@ -2072,47 +2084,73 @@ func main() {
 // VPL Analysis handler
 func handleVPLAnalysis(w http.ResponseWriter, r *http.Request) {
 	date := strings.TrimPrefix(r.URL.Path, "/api/analysis/")
-	log.Printf("🔍 VPL Analysis requested for date: %s", date) // DEBUG ekleyin
+	log.Printf("🔍 VPL Analysis requested for date: %s", date)
 
 	if date == "" || !validateInput(date) {
-		log.Printf("❌ Invalid date parameter: %s", date) // DEBUG ekleyin
+		log.Printf("❌ Invalid date parameter: %s", date)
 		sendError(w, "Invalid date parameter", http.StatusBadRequest)
+		return
+	}
+
+	// ✅ FIX 1: Önce gerçek dosyaların var olup olmadığını kontrol et
+	hasVPL, _, _ := checkFilesForDate(date)
+	if !hasVPL {
+		log.Printf("❌ No VPL file found for date: %s", date)
+		sendJSON(w, APIResponse{
+			Success: false,
+			Message: fmt.Sprintf("Bu tarih (%s) için VPL dosyası bulunamadı. Lütfen dosyaların mevcut olduğundan emin olun.", date),
+		})
 		return
 	}
 
 	// VPL summary'yi al
 	summary, err := getVPLAnalysisSummary(date)
 	if err != nil {
-		log.Printf("❌ getVPLAnalysisSummary error: %v", err) // DEBUG ekleyin
+		log.Printf("❌ getVPLAnalysisSummary error: %v", err)
 		sendError(w, "Analysis not found", http.StatusNotFound)
 		return
 	}
 
-	log.Printf("✅ VPL Summary found: Issues=%d", summary.IssuesFound) // DEBUG ekleyin
+	log.Printf("✅ VPL Summary found: Issues=%d", summary.IssuesFound)
 
-	// ✅ GERÇEK VPL ISSUES'LARI AL (boş array yerine)
-	vplIssues, total, err := getVPLIssues(date, 1, 9000000) // İlk 1000 issue'yu al
-	if err != nil {
-		log.Printf("❌ getVPLIssues error: %v", err) // DEBUG ekleyin
-		vplIssues = []VPLIssueDetail{}              // Hata varsa boş array
-	} else {
-		log.Printf("✅ Found %d VPL issues (total: %d)", len(vplIssues), total) // DEBUG ekleyin
+	// ✅ FIX 2: Eğer analiz yapılmamışsa (0 issue), kullanıcıya net bilgi ver
+	if summary.IssuesFound == 0 && summary.AffectedVINs == 0 {
+		// Check if this date has been analyzed
+		var analysisExists bool
+		err = db.QueryRow("SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM vpl_issues WHERE date = ?", date).Scan(&analysisExists)
+		if err != nil || !analysisExists {
+			log.Printf("⚠️ No analysis found in database for date: %s", date)
+			sendJSON(w, APIResponse{
+				Success: false,
+				Message: fmt.Sprintf("Bu tarih (%s) için analiz henüz yapılmamış. Lütfen 'Manuel Analiz' butonunu kullanarak analiz başlatın.", date),
+			})
+			return
+		}
 	}
 
-	// ✅ PART CHANGES'I VPL ISSUES'LARDAN OLUŞTUR
+	// GERÇEK VPL ISSUES'LARI AL
+	vplIssues, total, err := getVPLIssues(date, 1, 1000000)
+	if err != nil {
+		log.Printf("❌ getVPLIssues error: %v", err)
+		vplIssues = []VPLIssueDetail{}
+	} else {
+		log.Printf("✅ Found %d VPL issues (total: %d)", len(vplIssues), total)
+	}
+
+	// PART CHANGES'I VPL ISSUES'LARDAN OLUŞTUR
 	partChanges := convertVPLIssuesToPartChanges(vplIssues)
 	missingRequired := convertVPLIssuesToMissingRequired(vplIssues)
 
-	log.Printf("✅ Converted to %d part changes, %d missing required", len(partChanges), len(missingRequired)) // DEBUG ekleyin
+	log.Printf("✅ Converted to %d part changes, %d missing required", len(partChanges), len(missingRequired))
 
 	// Frontend'in beklediği format
 	analysisData := map[string]interface{}{
-		"part_changes":           partChanges,     // ✅ Gerçek veri
-		"missing_required_file2": missingRequired, // ✅ Gerçek veri
+		"part_changes":           partChanges,
+		"missing_required_file2": missingRequired,
 		"summary":                summary,
 	}
 
-	log.Printf("✅ Sending analysis data to frontend") // DEBUG ekleyin
+	log.Printf("✅ Sending analysis data to frontend")
 
 	sendJSON(w, APIResponse{
 		Success: true,
@@ -2130,20 +2168,35 @@ func handleManualVPLAnalysis(w http.ResponseWriter, r *http.Request) {
 	// Bugünün tarihini al
 	today := time.Now().Format("2006-01-02")
 
-	// Async olarak analiz çalıştır
-	go func() {
-		if err := runCompleteAnalysis(today); err != nil {
-			log.Printf("❌ Manual analysis failed: %v", err)
-		}
-	}()
+	log.Printf("🔨 Manual VPL analysis started for date: %s", today)
+
+	// ✅ FIX: Önce eski verileri temizle
+	_, err := db.Exec("DELETE FROM vpl_issues WHERE date = ?", today)
+	if err != nil {
+		log.Printf("❌ Failed to clear old VPL data: %v", err)
+		sendError(w, "Failed to clear old data", http.StatusInternalServerError)
+		return
+	}
+	log.Printf("🗑️ Cleared old VPL data for date: %s", today)
+
+	// ✅ Analizi SYNC olarak çalıştır (async değil)
+	if err := runCompleteAnalysis(today); err != nil {
+		log.Printf("❌ Manual analysis failed: %v", err)
+		sendError(w, "Analysis failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("✅ Manual VPL analysis completed for date: %s", today)
 
 	sendJSON(w, APIResponse{
 		Success: true,
-		Message: "Analysis started",
+		Message: "Manual analysis completed successfully",
+		Data:    today,
 	})
 }
 
 // Masterdata Analysis handler
+// Masterdata Analysis handler - GERÇEKÇİ VERİ KONTROLÜ
 func handleMasterDataAnalysis(w http.ResponseWriter, r *http.Request) {
 	date := strings.TrimPrefix(r.URL.Path, "/api/masterdata/analysis/")
 	if date == "" || !validateInput(date) {
@@ -2153,7 +2206,18 @@ func handleMasterDataAnalysis(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("🔍 Masterdata analysis requested for date: %s", date)
 
-	// ✅ GERÇEK VERİ: Database'den master data issues'ları al
+	// ✅ FIX 1: Önce gerçek dosyaların var olup olmadığını kontrol et
+	_, hasTEI, hasOSL := checkFilesForDate(date)
+	if !hasTEI && !hasOSL {
+		log.Printf("❌ No TEI/OSL files found for date: %s", date)
+		sendJSON(w, APIResponse{
+			Success: false,
+			Message: fmt.Sprintf("Bu tarih (%s) için TEI/OSL dosyaları bulunamadı. Lütfen masterdata dosyalarının mevcut olduğundan emin olun.", date),
+		})
+		return
+	}
+
+	// ✅ FIX 2: Database'den GERÇEK master data issues'ları al
 	issues, _, err := getMasterDataIssues(date, 1, 100000)
 	if err != nil {
 		log.Printf("❌ getMasterDataIssues error: %v", err)
@@ -2162,6 +2226,29 @@ func handleMasterDataAnalysis(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("✅ Found %d master data issues for date %s", len(issues), date)
+
+	// ✅ FIX 3: Eğer hiç issue yoksa, analiz yapılmış mı kontrol et
+	if len(issues) == 0 {
+		var analysisExists bool
+		err = db.QueryRow("SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM masterdata_issues WHERE date = ?", date).Scan(&analysisExists)
+		if err != nil || !analysisExists {
+			log.Printf("⚠️ No masterdata analysis found in database for date: %s", date)
+			sendJSON(w, APIResponse{
+				Success: false,
+				Message: fmt.Sprintf("Bu tarih (%s) için masterdata analizi henüz yapılmamış. Lütfen 'Manuel Analiz' butonunu kullanarak analiz başlatın.", date),
+			})
+			return
+		}
+
+		// ✅ Analiz yapılmış ama sorun yok - GERÇEKÇİ başarı mesajı
+		log.Printf("✅ Analysis exists but no issues found for date: %s", date)
+		analysisData := createEmptyMasterdataAnalysis()
+		sendJSON(w, APIResponse{
+			Success: true,
+			Data:    map[string]interface{}{"analysis": analysisData},
+		})
+		return
+	}
 
 	// Issues'ları kategorize et
 	var teiNotFound []interface{}
@@ -2262,55 +2349,10 @@ func handleMasterDataAnalysis(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Statistics hesapla
-	totalVPLParts := 1131
-	foundInTEI := 525
-	teiMatchRate := float64(foundInTEI) / float64(totalVPLParts) * 100
-	innerRefAccuracy := float64(foundInTEI-len(innerMismatch)) / float64(foundInTEI) * 100
-	descriptionCoverage := float64(foundInTEI-len(missingDesc)) / float64(foundInTEI) * 100
-
-	totalParts := 525
-	fullyCompliantParts := totalParts - oslIssues - ckViolations
-	overallComplianceRate := float64(fullyCompliantParts) / float64(totalParts) * 100
-
-	// Frontend'in beklediği format
-	analysisData := map[string]interface{}{
-		"tei_analysis_results": map[string]interface{}{
-			"statistics": map[string]interface{}{
-				"total_vpl_parts":      totalVPLParts,
-				"found_in_tei":         foundInTEI,
-				"tei_match_rate":       teiMatchRate,
-				"inner_ref_accuracy":   innerRefAccuracy,
-				"description_coverage": descriptionCoverage,
-			},
-			"found_in_tei":              []interface{}{}, // Başarılı olanlar
-			"not_found_in_tei":          teiNotFound,
-			"inner_reference_incorrect": innerMismatch,
-			"missing_description":       missingDesc,
-		},
-		"osl_analysis_results": map[string]interface{}{
-			"statistics": map[string]interface{}{
-				"total_inner_references": foundInTEI,
-				"found_in_osl":           520,
-				"osl_match_rate":         99.0,
-				"parameter_completeness": 95.0,
-				"ck_compliance_rate":     float64(150-ckViolations) / 150 * 100,
-			},
-			"validation_statistics": map[string]interface{}{
-				"total_parts":                    totalParts,
-				"fully_compliant_parts":          fullyCompliantParts,
-				"overall_compliance_rate":        overallComplianceRate,
-				"required_param_compliance_rate": 85.0,
-				"project_compliance_rate":        95.0,
-				"ck_compliance_rate":             float64(150-ckViolations) / 150 * 100,
-				"required_param_violations":      oslIssues - ckViolations,
-				"project_param_violations":       0,
-				"ck_module_violations":           ckViolations,
-				"ck_module_parts":                150,
-			},
-			"validation_results": validationResults,
-		},
-	}
+	// ✅ FIX 4: GERÇEKÇİ statistics hesaplama
+	analysisData := createMasterdataAnalysisFromRealData(date,
+		teiNotFound, innerMismatch, missingDesc, validationResults,
+		teiIssues, oslIssues, ckViolations)
 
 	log.Printf("✅ Sending masterdata analysis to frontend: TEI issues=%d, OSL issues=%d", teiIssues, oslIssues)
 
@@ -2318,6 +2360,315 @@ func handleMasterDataAnalysis(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		Data:    map[string]interface{}{"analysis": analysisData},
 	})
+}
+func createEmptyMasterdataAnalysis() map[string]interface{} {
+	return map[string]interface{}{
+		"tei_analysis_results": map[string]interface{}{
+			"statistics": map[string]interface{}{
+				"total_vpl_parts":      0,
+				"found_in_tei":         0,
+				"tei_match_rate":       0.0,
+				"inner_ref_accuracy":   0.0,
+				"description_coverage": 0.0,
+			},
+			"found_in_tei":              []interface{}{},
+			"not_found_in_tei":          []interface{}{},
+			"inner_reference_incorrect": []interface{}{},
+			"missing_description":       []interface{}{},
+		},
+		"osl_analysis_results": map[string]interface{}{
+			"statistics": map[string]interface{}{
+				"total_inner_references": 0,
+				"found_in_osl":           0,
+				"osl_match_rate":         0.0,
+				"parameter_completeness": 0.0,
+				"ck_compliance_rate":     0.0,
+			},
+			"validation_statistics": map[string]interface{}{
+				"total_parts":                    0,
+				"fully_compliant_parts":          0,
+				"overall_compliance_rate":        0.0,
+				"required_param_compliance_rate": 0.0,
+				"project_compliance_rate":        0.0,
+				"ck_compliance_rate":             0.0,
+				"required_param_violations":      0,
+				"project_param_violations":       0,
+				"ck_module_violations":           0,
+				"ck_module_parts":                0,
+			},
+			"validation_results": []interface{}{},
+		},
+	}
+}
+
+// ✅ YENİ: Gerçek veriden masterdata analizi oluşturma
+func createMasterdataAnalysisFromRealData(
+	date string,
+	teiNotFound, innerMismatch, missingDesc, validationResults []interface{},
+	teiIssues, oslIssues, ckViolations int) map[string]interface{} {
+
+	log.Printf("🔍 Creating masterdata analysis with REAL data for date: %s", date)
+
+	// ✅ GERÇEK VPL dosyasından unique part sayısını al
+	var totalVPLParts int
+	var foundInTEI int
+
+	vplFile := findVPLFileForDate(date)
+	if vplFile != "" {
+		log.Printf("📄 Reading VPL file: %s", vplFile)
+		vplRecords, err := readVPLFile(vplFile)
+		if err == nil {
+			customerRefs := extractCustomerReferences(vplRecords)
+			totalVPLParts = len(customerRefs)
+			foundInTEI = totalVPLParts - len(teiNotFound)
+
+			log.Printf("📊 REAL VPL Stats: Total unique parts=%d, Found in TEI=%d",
+				totalVPLParts, foundInTEI)
+		} else {
+			log.Printf("❌ Failed to read VPL file: %v", err)
+		}
+	} else {
+		log.Printf("❌ VPL file not found for date: %s", date)
+	}
+
+	// Eğer VPL dosyası okunamadıysa, hata ver - tahmin yapma
+	if totalVPLParts == 0 {
+		log.Printf("❌ Cannot calculate real stats without VPL file")
+		totalVPLParts = 0
+		foundInTEI = 0
+	}
+
+	// ✅ GERÇEK istatistikleri hesapla
+	var teiMatchRate, innerRefAccuracy, descriptionCoverage float64
+
+	if totalVPLParts > 0 {
+		teiMatchRate = float64(foundInTEI) / float64(totalVPLParts) * 100
+
+		if foundInTEI > 0 {
+			innerRefAccuracy = float64(foundInTEI-len(innerMismatch)) / float64(foundInTEI) * 100
+			descriptionCoverage = float64(foundInTEI-len(missingDesc)) / float64(foundInTEI) * 100
+		}
+	}
+
+	// Negatif değerleri düzelt
+	if innerRefAccuracy < 0 {
+		innerRefAccuracy = 0
+	}
+	if descriptionCoverage < 0 {
+		descriptionCoverage = 0
+	}
+
+	// ✅ OSL istatistikleri - GERÇEK veriler
+	totalValidationResults := len(validationResults)
+	fullyCompliantParts := totalValidationResults - oslIssues - ckViolations
+	if fullyCompliantParts < 0 {
+		fullyCompliantParts = 0
+	}
+
+	var overallComplianceRate float64
+	if totalValidationResults > 0 {
+		overallComplianceRate = float64(fullyCompliantParts) / float64(totalValidationResults) * 100
+	}
+
+	// ✅ CK compliance - GERÇEK hesaplama
+	var ckComplianceRate float64
+	if ckViolations > 0 {
+		// CK modülü part sayısını OSL validation'dan hesapla
+		ckModuleParts := 0
+		for _, result := range validationResults {
+			if resultMap, ok := result.(map[string]interface{}); ok {
+				if ckCompliance, exists := resultMap["ck_module_compliance"]; exists {
+					if ckMap, ok := ckCompliance.(map[string]interface{}); ok {
+						if isck, exists := ckMap["is_ck_module"]; exists {
+							if isCKModule, ok := isck.(bool); ok && isCKModule {
+								ckModuleParts++
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if ckModuleParts > 0 {
+			ckComplianceRate = float64(ckModuleParts-ckViolations) / float64(ckModuleParts) * 100
+		}
+	} else {
+		ckComplianceRate = 100.0 // Violation yoksa %100
+	}
+
+	// ✅ OSL match rate - GERÇEK hesaplama
+	var oslMatchRate, parameterCompleteness float64
+	if foundInTEI > 0 {
+		foundInOSL := foundInTEI - (oslIssues - ckViolations) // CK violation'ları hariç OSL issue'ları
+		if foundInOSL < 0 {
+			foundInOSL = 0
+		}
+		oslMatchRate = float64(foundInOSL) / float64(foundInTEI) * 100
+		parameterCompleteness = oslMatchRate // Aynı mantık
+	}
+
+	log.Printf("📊 REAL Statistics calculated:")
+	log.Printf("   Total VPL Parts: %d", totalVPLParts)
+	log.Printf("   Found in TEI: %d (%.1f%%)", foundInTEI, teiMatchRate)
+	log.Printf("   Inner Ref Accuracy: %.1f%%", innerRefAccuracy)
+	log.Printf("   Description Coverage: %.1f%%", descriptionCoverage)
+	log.Printf("   OSL Match Rate: %.1f%%", oslMatchRate)
+	log.Printf("   Parameter Completeness: %.1f%%", parameterCompleteness)
+	log.Printf("   CK Compliance: %.1f%%", ckComplianceRate)
+	log.Printf("   Overall Compliance: %.1f%%", overallComplianceRate)
+
+	return map[string]interface{}{
+		"tei_analysis_results": map[string]interface{}{
+			"statistics": map[string]interface{}{
+				"total_vpl_parts":      totalVPLParts,       // ✅ GERÇEK
+				"found_in_tei":         foundInTEI,          // ✅ GERÇEK
+				"tei_match_rate":       teiMatchRate,        // ✅ GERÇEK
+				"inner_ref_accuracy":   innerRefAccuracy,    // ✅ GERÇEK
+				"description_coverage": descriptionCoverage, // ✅ GERÇEK
+			},
+			"found_in_tei":              []interface{}{}, // Başarılı olanlar (şimdilik boş)
+			"not_found_in_tei":          teiNotFound,
+			"inner_reference_incorrect": innerMismatch,
+			"missing_description":       missingDesc,
+		},
+		"osl_analysis_results": map[string]interface{}{
+			"statistics": map[string]interface{}{
+				"total_inner_references": foundInTEI,                              // ✅ GERÇEK
+				"found_in_osl":           foundInTEI - (oslIssues - ckViolations), // ✅ GERÇEK
+				"osl_match_rate":         oslMatchRate,                            // ✅ GERÇEK
+				"parameter_completeness": parameterCompleteness,                   // ✅ GERÇEK
+				"ck_compliance_rate":     ckComplianceRate,                        // ✅ GERÇEK
+			},
+			"validation_statistics": map[string]interface{}{
+				"total_parts":                    totalValidationResults,                              // ✅ GERÇEK
+				"fully_compliant_parts":          fullyCompliantParts,                                 // ✅ GERÇEK
+				"overall_compliance_rate":        overallComplianceRate,                               // ✅ GERÇEK
+				"required_param_compliance_rate": calculateRequiredParamCompliance(validationResults), // ✅ GERÇEK
+				"project_compliance_rate":        calculateProjectCompliance(validationResults),       // ✅ GERÇEK
+				"ck_compliance_rate":             ckComplianceRate,                                    // ✅ GERÇEK
+				"required_param_violations":      countRequiredParamViolations(validationResults),     // ✅ GERÇEK
+				"project_param_violations":       countProjectViolations(validationResults),           // ✅ GERÇEK
+				"ck_module_violations":           ckViolations,                                        // ✅ GERÇEK
+				"ck_module_parts":                countCKModuleParts(validationResults),               // ✅ GERÇEK
+			},
+			"validation_results": validationResults,
+		},
+	}
+}
+
+// ✅ Yardımcı fonksiyonlar - GERÇEK hesaplamalar için
+func calculateRequiredParamCompliance(validationResults []interface{}) float64 {
+	if len(validationResults) == 0 {
+		return 0.0
+	}
+
+	compliant := 0
+	for _, result := range validationResults {
+		if resultMap, ok := result.(map[string]interface{}); ok {
+			if reqCompliance, exists := resultMap["required_compliance"]; exists {
+				if reqMap, ok := reqCompliance.(map[string]interface{}); ok {
+					if isCompliant, exists := reqMap["is_compliant"]; exists {
+						if compliant_bool, ok := isCompliant.(bool); ok && compliant_bool {
+							compliant++
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return float64(compliant) / float64(len(validationResults)) * 100
+}
+
+func calculateProjectCompliance(validationResults []interface{}) float64 {
+	if len(validationResults) == 0 {
+		return 0.0
+	}
+
+	compliant := 0
+	for _, result := range validationResults {
+		if resultMap, ok := result.(map[string]interface{}); ok {
+			if projCompliance, exists := resultMap["project_compliance"]; exists {
+				if projMap, ok := projCompliance.(map[string]interface{}); ok {
+					if isCompliant, exists := projMap["is_compliant"]; exists {
+						if compliant_bool, ok := isCompliant.(bool); ok && compliant_bool {
+							compliant++
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return float64(compliant) / float64(len(validationResults)) * 100
+}
+
+func countRequiredParamViolations(validationResults []interface{}) int {
+	violations := 0
+	for _, result := range validationResults {
+		if resultMap, ok := result.(map[string]interface{}); ok {
+			if reqCompliance, exists := resultMap["required_compliance"]; exists {
+				if reqMap, ok := reqCompliance.(map[string]interface{}); ok {
+					if isCompliant, exists := reqMap["is_compliant"]; exists {
+						if compliant_bool, ok := isCompliant.(bool); ok && !compliant_bool {
+							violations++
+						}
+					}
+				}
+			}
+		}
+	}
+	return violations
+}
+
+func countProjectViolations(validationResults []interface{}) int {
+	violations := 0
+	for _, result := range validationResults {
+		if resultMap, ok := result.(map[string]interface{}); ok {
+			if projCompliance, exists := resultMap["project_compliance"]; exists {
+				if projMap, ok := projCompliance.(map[string]interface{}); ok {
+					if isCompliant, exists := projMap["is_compliant"]; exists {
+						if compliant_bool, ok := isCompliant.(bool); ok && !compliant_bool {
+							violations++
+						}
+					}
+				}
+			}
+		}
+	}
+	return violations
+}
+
+func countCKModuleParts(validationResults []interface{}) int {
+	ckParts := 0
+	for _, result := range validationResults {
+		if resultMap, ok := result.(map[string]interface{}); ok {
+			if ckCompliance, exists := resultMap["ck_module_compliance"]; exists {
+				if ckMap, ok := ckCompliance.(map[string]interface{}); ok {
+					if isck, exists := ckMap["is_ck_module"]; exists {
+						if isCKModule, ok := isck.(bool); ok && isCKModule {
+							ckParts++
+						}
+					}
+				}
+			}
+		}
+	}
+	return ckParts
+}
+
+// ✅ DOĞRU: VPL dosyasından CK modülü sayısını bul
+
+// ✅ Dosya varlığını kontrol eden fonksiyonu geliştir
+func checkFilesForDate(date string) (bool, bool, bool) {
+	vplFile := findVPLFileForDate(date)
+	teiFile := findTEIFileForDate(date)
+	oslFile := findOSLFileForDate(date)
+
+	log.Printf("📁 File check for %s: VPL=%v, TEI=%v, OSL=%v",
+		date, vplFile != "", teiFile != "", oslFile != "")
+
+	return vplFile != "", teiFile != "", oslFile != ""
 }
 
 // Reanalyze handler

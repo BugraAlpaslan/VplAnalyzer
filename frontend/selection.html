@@ -29,23 +29,22 @@
             position: absolute;
             top: 30px;
             right: 30px;
-            width: 60px;
-            height: 60px;
-            background-color: #1a1a1a;
-            border: 1px solid #2a2a2a;
+            width: 100px;
+            height: 100px;
+         
             display: flex;
             align-items: center;
             justify-content: center;
         }
-
-        .logo-placeholder {
-            color: #666;
-            font-size: 20px;
-        }
-
+.logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+}
         .main-container {
             text-align: center;
-            max-width: 900px;
+            max-width: 1000px;
             width: 100%;
             padding: 0 40px;
         }
@@ -85,7 +84,7 @@
         .dashboard-card {
             background-color: #1a1a1a;
             border: 2px solid #2a2a2a;
-            padding: 40px 30px;
+            padding: 32px 24px;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
@@ -285,7 +284,7 @@
             }
             
             .main-container {
-                padding: 0 20px;
+                padding: 0 40px;
             }
             
             .title {
@@ -299,9 +298,9 @@
     </style>
 </head>
 <body>
-    <div class="logo-container">
-        <div class="logo-placeholder">🏢</div>
-    </div>
+  <div class="logo-container">
+    <img src="/assets/logo-tiny.png" alt="MSAS Logo" class="logo-img">
+</div>
 
     <div class="main-container">
         <div class="welcome-section">
@@ -380,33 +379,7 @@
         </div>
 
         <!-- System Status -->
-        <div class="status-section">
-            <div class="status-title">📊 Sistem Durumu</div>
-            <div class="status-grid">
-                <div class="status-item">
-                    <span class="status-label">VPL Sistemi</span>
-                    <span class="status-value" id="vplStatus">
-                        Kontrol ediliyor<span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>
-                    </span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Masterdata Sistemi</span>
-                    <span class="status-value" id="masterdataStatus">
-                        Kontrol ediliyor<span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>
-                    </span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Son VPL Analizi</span>
-                    <span class="status-value" id="lastVplAnalysis">-</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Son Masterdata Analizi</span>
-                    <span class="status-value" id="lastMasterdataAnalysis">-</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
+        
     <script>
         // Navigation functions
         function navigateTo(dashboard) {
@@ -414,68 +387,6 @@
                 window.location.href = '/vpl-dashboard';
             } else if (dashboard === 'masterdata') {
                 window.location.href = '/masterdata-dashboard';
-            }
-        }
-
-        // Check system health on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            checkSystemHealth();
-        });
-
-        function checkSystemHealth() {
-            fetch('/api/system/health')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        updateSystemStatus(data.data);
-                    } else {
-                        showSystemError();
-                    }
-                })
-                .catch(error => {
-                    console.error('System health check failed:', error);
-                    showSystemError();
-                });
-        }
-
-        function updateSystemStatus(healthData) {
-            // VPL System Status
-            const vplStatus = document.getElementById('vplStatus');
-            if (healthData.vpl && healthData.vpl.vpl_directory === 'OK') {
-                vplStatus.innerHTML = 'Aktif';
-                vplStatus.className = 'status-value success';
-            } else {
-                vplStatus.innerHTML = 'Sorun Var';
-                vplStatus.className = 'status-value warning';
-            }
-
-            // Masterdata System Status
-            const masterdataStatus = document.getElementById('masterdataStatus');
-            if (healthData.masterdata && healthData.masterdata.masterdata_directory === 'OK') {
-                masterdataStatus.innerHTML = 'Aktif';
-                masterdataStatus.className = 'status-value success';
-            } else {
-                masterdataStatus.innerHTML = 'Sorun Var';
-                masterdataStatus.className = 'status-value warning';
-            }
-
-            // Last analysis dates
-            const lastVplAnalysis = document.getElementById('lastVplAnalysis');
-            if (healthData.vpl && healthData.vpl.latest_vpl_analysis && healthData.vpl.latest_vpl_analysis !== 'NONE') {
-                lastVplAnalysis.innerHTML = formatDate(healthData.vpl.latest_vpl_analysis);
-                lastVplAnalysis.className = 'status-value success';
-            } else {
-                lastVplAnalysis.innerHTML = 'Henüz analiz yok';
-                lastVplAnalysis.className = 'status-value warning';
-            }
-
-            const lastMasterdataAnalysis = document.getElementById('lastMasterdataAnalysis');
-            if (healthData.masterdata && healthData.masterdata.latest_analysis && healthData.masterdata.latest_analysis !== 'NONE') {
-                lastMasterdataAnalysis.innerHTML = formatDate(healthData.masterdata.latest_analysis);
-                lastMasterdataAnalysis.className = 'status-value success';
-            } else {
-                lastMasterdataAnalysis.innerHTML = 'Henüz analiz yok';
-                lastMasterdataAnalysis.className = 'status-value warning';
             }
         }
 

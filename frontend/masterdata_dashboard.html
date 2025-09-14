@@ -479,6 +479,28 @@
             font-size: 11px;
             line-height: 1.4;
         }
+        .recent-dates-section {
+    margin-bottom: 20px;
+}
+
+.section-header {
+    color: #fb923c;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #1f1f1f;
+}
+
+/* Date card active state için fb923c rengi kullan */
+.date-card.active {
+    background-color: #0a0a0a;
+    border-color: #fb923c;
+    box-shadow: 0 0 10px rgba(251, 146, 60, 0.3);
+}
+
+/* Scroll bar renklerini düzelt */
+
 
         /* Modal Styles */
         .modal-overlay {
@@ -569,7 +591,174 @@
             font-family: 'Fira Code', monospace;
             font-size: 12px;
         }
+        /* Custom Date Section */
+.custom-date-section {
+    margin-bottom: 20px;
+}
 
+.date-picker-container {
+    background-color: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.date-picker-label {
+    color: #fb923c;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.date-input {
+    width: 100%;
+    background-color: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    color: #e0e0e0;
+    padding: 8px;
+    font-family: 'Fira Code', monospace;
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: #fb923c;
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+.load-date-btn {
+    width: 100%;
+    background-color: #fb923c;
+    color: #0f0f0f;
+    border: none;
+    padding: 8px;
+    font-family: 'Fira Code', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+.load-date-btn:hover {
+    background-color: #f97316;
+}
+
+.load-date-btn:disabled {
+    background-color: #2a2a2a;
+    color: #777;
+    cursor: not-allowed;
+}
+
+.selected-date-container {
+    background-color: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    padding: 10px;
+    display: none;
+}
+
+.selected-date-container.show {
+    display: block;
+}
+
+.selected-date-label {
+    color: #777;
+    font-size: 9px;
+    margin-bottom: 4px;
+}
+
+.selected-date-display {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    padding: 8px;
+    cursor: pointer;
+    position: relative;
+}
+
+.selected-date-display:hover {
+    background-color: #444;
+}
+
+.selected-date-display.active {
+    background-color: #0a0a0a;
+    border-color: #fb923c;
+    box-shadow: 0 0 0 1px #fb923c;
+}
+
+.selected-date-text {
+    color: #e0e0e0;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.selected-date-subtitle {
+    color: #777;
+    font-size: 9px;
+    margin-top: 2px;
+}
+
+.custom-reanalyze-btn {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: transparent;
+    border: none;
+    color: #777;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px;
+}
+
+.custom-reanalyze-btn:hover {
+    color: #e0e0e0;
+    background-color: #fb923c;
+}
+/* Sidebar scroll düzeltmesi */
+.sidebar {
+    height: calc(110vh - 90px); /* Header height'ını çıkar */
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* Welcome section'ı sabit tut */
+.welcome-section {
+    flex-shrink: 0;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #1f1f1f;
+}
+
+/* Date sections'ları daha kompakt yap */
+.recent-dates-section {
+    margin-bottom: 15px; /* 20px'den 15px'e düşür */
+}
+
+.custom-date-section {
+    margin-bottom: 15px; /* 20px'den 15px'e düşür */
+}
+
+/* Date picker container'ı daha küçük yap */
+.date-picker-container {
+    padding: 10px; /* 12px'den 10px'e düşür */
+    margin-bottom: 8px; /* 10px'den 8px'e düşür */
+}
+
+/* Selected date container'ı daha küçük yap */
+.selected-date-container {
+    padding: 8px; /* 10px'den 8px'e düşür */
+}
+
+/* Date card'ları daha küçük yap */
+.date-card {
+    padding: 10px; /* 12px'den 10px'e düşür */
+    margin-bottom: 5px; /* 8px'den 5px'e düşür */
+}
         .modal-body {
             flex: 1;
             padding: 20px;
@@ -721,29 +910,52 @@
             <span class="system-indicator">MASTERDATA</span>
         </div>
         <div class="header-buttons">
-            <button class="header-btn back" onclick="goBack()">← Dashboard Seçimi</button>
-            <button class="header-btn" onclick="openConfig()">Config</button>
-            <button class="header-btn" onclick="manualAnalysis()">Manuel Analiz</button>
+            <button class="header-btn back" onclick="goBack()">← Dashboard Selection</button>
+            <button class="header-btn" onclick="manualAnalysis()">Manuel Analysis</button>
         </div>
     </div>
 
     <!-- Left Sidebar -->
-    <div class="sidebar">
-        <div class="welcome-section">
-            <div class="welcome-text">Masterdata Analizi</div>
-            <div class="username" id="currentUser">Admin</div>
-        </div>
-        
+<div class="sidebar">
+    <div class="welcome-section">
+        <div class="welcome-text">Masterdata Analysis</div>
+        <div class="username" id="currentUser">Admin</div>
+    </div>
+    
+    <!-- Recent Dates Section - VPL gibi -->
+    <div class="recent-dates-section">
+        <div class="section-header">📅 Son 5 Gün</div>
         <div id="dateCards">
             <!-- Dynamic date cards will be generated -->
         </div>
     </div>
+    <!-- Custom Date Section -->
+<div class="custom-date-section">
+    <div class="section-header">🗓️ Select special date</div>
+    <div class="date-picker-container">
+        <label class="date-picker-label" for="customDate">Analysis Date:</label>
+        <input type="date" id="customDate" class="date-input">
+        <button class="load-date-btn" id="loadDateBtn" onclick="loadCustomDate()">
+            📊 Load Custom Date
+        </button>
+    </div>
+    
+    <div class="selected-date-container" id="selectedDateContainer">
+        <div class="selected-date-label">Seçili Özel Tarih:</div>
+        <div class="selected-date-display" id="selectedDateDisplay" onclick="loadSelectedCustomDate()">
+            <div class="selected-date-text" id="selectedDateText"></div>
+            <div class="selected-date-subtitle"> Click for analysis</div>
+            <button class="custom-reanalyze-btn" onclick="event.stopPropagation(); reanalyzeCustomDate()">↻</button>
+        </div>
+    </div>
+</div>
+</div>
 
     <!-- TEI Analysis Content -->
     <div class="tei-content">
         <div class="content-title">
             <span class="icon">📄</span>
-            <span id="teiTitle">TEI Analizi - 16 Aralık 2024</span>
+            <span id="teiTitle">TEI analizi  </span>
         </div>
         
         <div class="stats-container" id="teiStats">
@@ -753,7 +965,7 @@
         
         <div class="results-container" id="teiResults">
             <!-- TEI results will be loaded here -->
-            <div class="loading">TEI analiz sonuçları yükleniyor...</div>
+            <div class="loading">TEI analysis sonuçları yükleniyor...</div>
         </div>
     </div>
 
@@ -761,7 +973,7 @@
     <div class="osl-content">
         <div class="content-title">
             <span class="icon">⚙️</span>
-            <span id="oslTitle">OSL Analizi - 16 Aralık 2024</span>
+            <span id="oslTitle">OSL analizi </span>
         </div>
         
         <div class="stats-container" id="oslStats">
@@ -771,7 +983,7 @@
         
         <div class="results-container" id="oslResults">
             <!-- OSL results will be loaded here -->
-            <div class="loading">OSL analiz sonuçları yükleniyor...</div>
+            <div class="loading">OSL analysis sonuçları yükleniyor...</div>
         </div>
     </div>
 
@@ -871,17 +1083,39 @@
                 console.log('✅ Masterdata analysis loaded successfully');
             } else {
                 console.warn('⚠️ API returned error:', data.message);
-                showErrorState('Analiz verisi yüklenemedi: ' + (data.message || 'Bilinmeyen hata'));
+                showErrorState('analysis verisi yüklenemedi: ' + (data.message || 'Bilinmeyen hata'));
             }
         })
         .catch(error => {
             console.error('❌ Analysis load error:', error);
-            showErrorState('Analiz verisi yüklenirken bir hata oluştu: ' + error.message);
+            showErrorState('analysis verisi yüklenirken bir hata oluştu: ' + error.message);
         });
 }
 
         // Update masterdata display with real data
-     // Mevcut updateMasterdataDisplay fonksiyonunun başına bu satırı ekleyin:
+function loadCustomDate() {
+    const dateInput = document.getElementById('customDate');
+    const selectedDate = dateInput ? dateInput.value : null;
+    
+    if (!selectedDate) {
+        alert('Lütfen bir tarih seçin');
+        return;
+    }
+    
+    loadMasterdataAnalysis(selectedDate);
+    showSelectedCustomDate(selectedDate);
+}
+
+function showSelectedCustomDate(date) {
+    const container = document.getElementById('selectedDateContainer');
+    const textElement = document.getElementById('selectedDateText');
+    
+    if (container && textElement) {
+        const displayDate = formatDateTurkish(new Date(date));
+        textElement.textContent = displayDate;
+        container.classList.add('show');
+    }
+}   // Mevcut updateMasterdataDisplay fonksiyonunun başına bu satırı ekleyin:
 function updateMasterdataDisplay(analysisData) {
     console.log('🎨 Updating masterdata display with:', analysisData);
     
@@ -981,7 +1215,7 @@ function openTEIModal(type) {
     
     if (!currentAnalysisData || !currentAnalysisData.tei_analysis_results) {
         console.error('❌ No TEI analysis data available');
-        alert('TEI analiz verisi bulunamadı. Lütfen önce analiz çalıştırın.');
+        alert('TEI analysis verisi bulunamadı. Lütfen önce analysis çalıştırın.');
         return;
     }
     
@@ -1047,7 +1281,7 @@ function openOSLModal(type) {
     
     if (!currentAnalysisData || !currentAnalysisData.osl_analysis_results) {
         console.error('❌ No OSL analysis data available');
-        alert('OSL analiz verisi bulunamadı. Lütfen önce analiz çalıştırın.');
+        alert('OSL analysis verisi bulunamadı. Lütfen önce analysis çalıştırın.');
         return;
     }
     
@@ -1350,22 +1584,85 @@ function updateActiveDate(date) {
         targetCard.classList.add('active');
     }
 }
+function updateTitles(date) {
+    const formattedDate = formatDateTurkish(new Date(date));
+    const teiTitle = document.getElementById('teiTitle');
+    const oslTitle = document.getElementById('oslTitle');
+    
+    if (teiTitle) teiTitle.textContent = `TEI analizi - ${formattedDate}`;
+    if (oslTitle) oslTitle.textContent = `OSL analizi - ${formattedDate}`;
 
+function manualAnalysis() {
+    const button = event.target;
+    const originalText = button.textContent;
+    
+    event.preventDefault();
+    
+    console.log('🔨 Manual masterdata analysis triggered');
+    
+    button.textContent = 'Analiz Yapılıyor...';
+    button.disabled = true;
+    
+    // ✅ Loading state
+    showLoadingState();
+    
+    // ✅ Özel loading mesajı
+    const loadingMessage = `
+        <div class="loading">
+            <div class="spinner"></div>
+            Manuel masterdata analizi başlatıldı...<br><br>
+            1. Eski veriler temizleniyor<br>
+            2. TEI/OSL dosyaları okunuyor<br>
+            3. Validation yapılıyor<br>
+            4. Sonuçlar hesaplanıyor<br><br>
+            Lütfen bekleyin...
+        </div>
+    `;
+    
+    const teiResults = document.getElementById('teiResults');
+    const oslResults = document.getElementById('oslResults');
+    if (teiResults) teiResults.innerHTML = loadingMessage;
+    if (oslResults) oslResults.innerHTML = loadingMessage;
+    
+    fetch('/api/masterdata/manual-analysis', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => {
+        console.log('📥 Manual analysis response:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('📊 Manual analysis result:', data);
+        if (data.success) {
+            console.log('✅ Manual masterdata analysis completed');
+            
+            // ✅ Analiz bitti, yeni veriyi yükle
+            const today = new Date().toISOString().split('T')[0];
+            setTimeout(() => {
+                loadMasterdataAnalysis(today);
+            }, 500);
+        } else {
+            console.error('❌ Manual analysis failed:', data.message);
+            showErrorState('Manuel analiz başarısız: ' + (data.message || 'Bilinmeyen hata'));
+        }
+    })
+    .catch(error => {
+        console.error('❌ Manual analysis error:', error);
+        showErrorState('Manuel analiz sırasında bir hata oluştu: ' + error.message);
+    })
+    .finally(() => {
+        button.textContent = originalText;
+        button.disabled = false;
+    });
+}}
 function updateTitles(date) {
     const formattedDate = formatDateTurkish(new Date(date));
     const teiTitle = document.getElementById('teiTitle');
     const oslTitle = document.getElementById('oslTitle');
     
-    if (teiTitle) teiTitle.textContent = `TEI Analizi - ${formattedDate}`;
-    if (oslTitle) oslTitle.textContent = `OSL Analizi - ${formattedDate}`;
-}
-function updateTitles(date) {
-    const formattedDate = formatDateTurkish(new Date(date));
-    const teiTitle = document.getElementById('teiTitle');
-    const oslTitle = document.getElementById('oslTitle');
-    
-    if (teiTitle) teiTitle.textContent = `TEI Analizi - ${formattedDate}`;
-    if (oslTitle) oslTitle.textContent = `OSL Analizi - ${formattedDate}`;
+    if (teiTitle) teiTitle.textContent = `TEI analizi - ${formattedDate}`;
+    if (oslTitle) oslTitle.textContent = `OSL analizi - ${formattedDate}`;
 }      // Update TEI analysis section
 function updateTEIAnalysis(teiResults) {
     console.log('🎨 Updating TEI analysis:', teiResults);
@@ -1458,7 +1755,7 @@ function updateTEIAnalysis(teiResults) {
     if (teiResultsHtml === '') {
         teiResultsHtml = `
             <div class="empty-state">
-                <h3>📄 TEI analizi tamamlandı</h3>
+                <h3>📄 TEI analiz completed</h3>
                 <p>Tüm kontroller başarılı, herhangi bir sorun bulunamadı.</p>
             </div>
         `;
@@ -1470,13 +1767,13 @@ function updateTEIAnalysis(teiResults) {
         console.log('✅ TEI results updated');
     }
 }
-        // Update OSL analysis section  
+        // Update OSL analiz section  
      function updateOSLAnalysis(oslResults) {
     console.log('🎨 Updating OSL analysis:', oslResults);
     
     if (!oslResults || !oslResults.statistics) {
         console.error('❌ Invalid OSL results structure');
-        showErrorState('OSL analiz verisi geçersiz');
+        showErrorState('OSL analysis verisi geçersiz');
         return;
     }
     
@@ -1564,7 +1861,7 @@ function updateTEIAnalysis(teiResults) {
     if (oslResultsHtml === '') {
         oslResultsHtml = `
             <div class="empty-state">
-                <h3>⚙️ OSL analizi tamamlandı</h3>
+                <h3>⚙️ OSL analysis completed</h3>
                 <p>Tüm validation kuralları başarılı, violation bulunamadı.</p>
             </div>
         `;
@@ -1970,7 +2267,7 @@ function applyFilter() {
 
         // Loading and error states
         function showLoadingState() {
-    const loadingHtml = '<div class="loading">Analiz verisi yükleniyor...</div>';
+    const loadingHtml = '<div class="loading">Loading analysis data...</div>';
     
     const teiStats = document.getElementById('teiStats');
     const teiResults = document.getElementById('teiResults');
@@ -2000,13 +2297,10 @@ function applyFilter() {
 
         // Navigation functions
         function goBack() {
-            window.location.href = '/selection.html';
+            window.location.href = '/selection';
         }
 
-        function openConfig() {
-            window.location.href = '/config.html';
-        }
-
+        
         // Manual analysis
         function manualAnalysis() {
             const button = event.target;
@@ -2016,7 +2310,7 @@ function applyFilter() {
             
             console.log('🔨 Manual masterdata analysis triggered');
             
-            button.textContent = 'Analiz Ediliyor...';
+            button.textContent = 'analysis Ediliyor...';
             button.disabled = true;
             
             fetch('/api/masterdata/manual-analysis', { 
@@ -2038,12 +2332,12 @@ function applyFilter() {
                     }, 1000);
                 } else {
                     console.error('❌ Manual analysis failed:', data.message);
-                    alert('Manuel analiz başarısız: ' + (data.message || 'Bilinmeyen hata'));
+                    alert('Manuel analysis başarısız: ' + (data.message || 'Bilinmeyen hata'));
                 }
             })
             .catch(error => {
                 console.error('❌ Manual analysis error:', error);
-                alert('Manuel analiz sırasında bir hata oluştu: ' + error.message);
+                alert('Manuel analysis sırasında bir hata oluştu: ' + error.message);
             })
             .finally(() => {
                 button.textContent = originalText;
@@ -2069,12 +2363,12 @@ function applyFilter() {
                 if (data.success) {
                     loadMasterdataAnalysis(date);
                 } else {
-                    alert('Yeniden analiz başarısız: ' + (data.message || 'Bilinmeyen hata'));
+                    alert('Yeniden analysis başarısız: ' + (data.message || 'Bilinmeyen hata'));
                 }
             })
             .catch(error => {
                 console.error('Reanalyze error:', error);
-                alert('Yeniden analiz sırasında bir hata oluştu');
+                alert('Yeniden analysis sırasında bir hata oluştu');
             })
             .finally(() => {
                 button.textContent = originalText;
@@ -2111,29 +2405,33 @@ function applyFilter() {
 
         // Generate date cards dynamically
         function generateDateCards() {
-            const container = document.getElementById('dateCards');
-            const today = new Date();
-            
-            // Generate cards for last 7 days
-            for (let i = 0; i < 7; i++) {
-                const date = new Date(today);
-                date.setDate(today.getDate() - i);
-                
-                const dateStr = date.toISOString().split('T')[0];
-                const displayDate = formatDateTurkish(date);
-                
-                const cardHTML = `
-                    <div class="date-card ${i === 0 ? 'active' : ''}" onclick="loadMasterdataAnalysis('${dateStr}')">
-                        <div class="date-text">${displayDate}</div>
-                        <div class="date-details">Masterdata Analizi</div>
-                        <button class="reanalyze-btn" onclick="event.stopPropagation(); reanalyze('${dateStr}')">↻</button>
-                    </div>
-                `;
-                
-                container.innerHTML += cardHTML;
-            }
-        }
-
+    const container = document.getElementById('dateCards');
+    const today = new Date();
+    
+    // Generate cards for last 5 days (VPL gibi)
+    for (let i = 0; i < 5; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        
+        const dateStr = date.toISOString().split('T')[0];
+        const displayDate = formatDateTurkish(date);
+        
+        // Önceki gün hesapla (comparison için)
+        const previousDate = new Date(date);
+        previousDate.setDate(date.getDate() - 1);
+        const previousDisplayDate = formatDateTurkish(previousDate);
+        
+        const cardHTML = `
+            <div class="date-card ${i === 0 ? 'active' : ''}" data-date="${dateStr}" onclick="loadMasterdataAnalysis('${dateStr}')">
+                <div class="date-text">${displayDate}</div>
+                <div class="date-details">vs ${previousDisplayDate}</div>
+                <button class="reanalyze-btn" onclick="event.stopPropagation(); reanalyze('${dateStr}')">↻</button>
+            </div>
+        `;
+        
+        container.innerHTML += cardHTML;
+    }
+}
         // Format date in Turkish
         function formatDateTurkish(date) {
             const months = [

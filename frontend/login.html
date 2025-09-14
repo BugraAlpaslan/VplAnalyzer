@@ -14,37 +14,43 @@
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Fira Code', monospace;
-            font-weight: 500;
-            background-color: #0f0f0f;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
+body {
+    font-family: 'Fira Code', monospace;
+    font-weight: 500;
+    background-color: #0f0f0f;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;      /* Ekleyin */
+    align-items: center;        /* Ekleyin */
+    justify-content: center;     /* Değiştirmeyin */
+    position: top;
+}
 
-        
-        
+        /* Logo Header */
 
-        .logo-placeholder {
-            color: #666;
-            font-size: 20px;
-        }
+.login-logo {
+    height: 300px;
+    width: auto;
+    max-width: 1000px;
+    object-fit: contain;
+    margin-bottom: 0px;         /* Logo ile login arası boşluk */
+}
+
+       
 
         .login-container {
             background-color: #1a1a1a;
             border: 1px solid #2a2a2a;
-            padding: 50px 40px;
+            padding: 25px 20px;
             text-align: center;
             min-width: 400px;
+            margin-bottom: 150px;
         }
 
         .welcome-text {
             color: #888;
             font-size: 18px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: 400;
         }
 
@@ -52,11 +58,11 @@
             color: #e0e0e0;
             font-size: 24px;
             font-weight: 600;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-align: left;
         }
 
@@ -108,7 +114,8 @@
     </style>
 </head>
 <body>
-    
+        <img src="/assets/logo-mid.png" alt="MSAS Logo" class="login-logo">
+
 
     <div class="login-container">
         <div class="welcome-text">Welcome</div>
