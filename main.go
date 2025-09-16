@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -19,6 +19,7 @@ import (
 	"time"
 
 	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/fsnotify/fsnotify"
 )
 
 // =============================================================================
@@ -2048,34 +2049,49 @@ func sendError(w http.ResponseWriter, message string, statusCode int) {
 // =============================================================================
 
 func main() {
-	log.Println("🚀 Starting MSAS VPL Analyzer...")
+	log.Println("🚀 Starting MSAS VPL Analyzer with Config Support...")
 
-	// Create required directories
-	os.MkdirAll("./vpl_files", 0755)
-	os.MkdirAll("./masterdata_files", 0755)
-	os.MkdirAll("./frontend", 0755)
+	// Config yükle
+	config := loadConfig()
 
-	// Connect to SQL Express database
+	// Database connection string'i güncelle
+	updateDatabaseConnection(config.Database.ConnectionString)
+
+	// Gerekli klasörleri oluştur
+	os.MkdirAll(config.LocalPaths.VPLFiles, 0755)
+	os.MkdirAll(config.LocalPaths.MasterDataFiles, 0755)
+
+	// Database'e bağlan
 	if err := connectDatabase(); err != nil {
 		log.Fatalf("❌ Database connection failed: %v", err)
 	}
 	defer db.Close()
 
-	// Setup HTTP routes
+	// Background servislerini başlat
+	log.Println("🔧 Starting background services...")
+
+	// File copy service
+	go startFileCopyService(config)
+
+	// File watcher service
+	go startFileWatcher(config)
+
+	// HTTP routes setup
 	setupRoutes()
 
-	// Start server
-	port := DEFAULT_PORT
-	if envPort := os.Getenv("PORT"); envPort != "" {
-		port = envPort
+	// Server port'unu config'den al
+	port := config.Server.Port
+	if port == "" {
+		port = DEFAULT_PORT
 	}
 
 	log.Printf("🌐 Server starting on http://localhost:%s", port)
-	log.Printf("📊 VPL files directory: ./vpl_files")
-	log.Printf("📄 Master data directory: ./masterdata_files")
+	log.Printf("📊 VPL files directory: %s", config.LocalPaths.VPLFiles)
+	log.Printf("📄 Master data directory: %s", config.LocalPaths.MasterDataFiles)
 	log.Println("✅ Application ready!")
 	log.Println("📋 Login credentials: admin/admin123 or user/vpl2024")
 
+	// Server başlat
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("❌ Server failed to start: %v", err)
 	}
@@ -2195,6 +2211,116 @@ func handleManualVPLAnalysis(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func calculateMasterDataStatistics(date string, issues []MasterDataIssueDetail) MasterDataStats {
+	log.Printf("🧮 Calculating statistics for date: %s", date)
+
+	stats := MasterDataStats{}
+
+	// ✅ 1. GERÇEK VPL DOSYASINI OKU
+	vplFile := findVPLFileForDate(date)
+	if vplFile != "" {
+		vplRecords, err := readVPLFile(vplFile)
+		if err == nil {
+			customerRefs := extractCustomerReferences(vplRecords)
+			stats.TotalVPLParts = len(customerRefs)
+			log.Printf("📊 VPL Stats: Total parts = %d", stats.TotalVPLParts)
+		}
+	}
+
+	// ✅ 2. GERÇEK TEI DOSYASINI OKU
+	teiFile := findTEIFileForDate(date)
+	if teiFile != "" {
+		teiRecords, err := readTEIFile(teiFile)
+		if err == nil {
+			stats.FoundInTEI = len(teiRecords)
+			if stats.TotalVPLParts > 0 {
+				stats.TEIMatchRate = float64(stats.FoundInTEI) / float64(stats.TotalVPLParts) * 100
+			}
+
+			// Inner ref accuracy hesapla (TEI'deki - hatalı olanlar)
+			innerMismatchCount := 0
+			missingDescCount := 0
+			for _, issue := range issues {
+				if issue.IssueType == "INNER_MISMATCH" {
+					innerMismatchCount++
+				}
+				if issue.IssueType == "NO_DESCRIPTION" {
+					missingDescCount++
+				}
+			}
+
+			if stats.FoundInTEI > 0 {
+				stats.InnerRefAccuracy = float64(stats.FoundInTEI-innerMismatchCount) / float64(stats.FoundInTEI) * 100
+				stats.DescriptionCoverage = float64(stats.FoundInTEI-missingDescCount) / float64(stats.FoundInTEI) * 100
+			}
+
+			log.Printf("📊 TEI Stats: Found = %d, Match Rate = %.1f%%, Inner Accuracy = %.1f%%",
+				stats.FoundInTEI, stats.TEIMatchRate, stats.InnerRefAccuracy)
+		}
+	}
+
+	// ✅ 3. GERÇEK OSL DOSYASINI OKU
+	oslFile := findOSLFileForDate(date)
+	if oslFile != "" {
+		oslRecords, err := readOSLFile(oslFile)
+		if err == nil {
+			stats.FoundInOSL = len(oslRecords)
+			if stats.FoundInTEI > 0 {
+				stats.OSLMatchRate = float64(stats.FoundInOSL) / float64(stats.FoundInTEI) * 100
+			}
+
+			// ✅ 4. CK MODÜLÜ TOPLAM SAYISINI HESAPLA
+			ckModuleCount := 0
+			requiredParamCompliantCount := 0
+			projectParamCompliantCount := 0
+
+			for _, params := range oslRecords {
+				// Required param compliance kontrol
+				hasModule := false
+				hasPartFamily := false
+				if moduleVal, exists := params["MODULE"]; exists && strings.TrimSpace(moduleVal) != "" {
+					hasModule = true
+				}
+				if pfVal, exists := params["PART_FAMILY"]; exists && strings.TrimSpace(pfVal) != "" {
+					hasPartFamily = true
+				}
+
+				if hasModule && hasPartFamily {
+					requiredParamCompliantCount++
+				}
+
+				// Project param compliance (genelde %95+ olur)
+				hasProject := false
+				if projVal, exists := params["PROJECT"]; exists && strings.TrimSpace(projVal) != "" {
+					hasProject = true
+				}
+				if hasProject {
+					projectParamCompliantCount++
+				}
+
+				// CK modülü say
+				if moduleVal, exists := params["MODULE"]; exists && strings.ToUpper(strings.TrimSpace(moduleVal)) == "CK" {
+					ckModuleCount++
+				}
+			}
+
+			stats.CKTotalParts = ckModuleCount
+			stats.TotalParts = stats.FoundInOSL
+
+			if stats.TotalParts > 0 {
+				stats.ParameterCompleteness = float64(requiredParamCompliantCount) / float64(stats.TotalParts) * 100
+				stats.RequiredParamComplianceRate = stats.ParameterCompleteness
+				stats.ProjectComplianceRate = float64(projectParamCompliantCount) / float64(stats.TotalParts) * 100
+			}
+
+			log.Printf("📊 OSL Stats: Found = %d, OSL Match = %.1f%%, CK Modules = %d, Param Complete = %.1f%%",
+				stats.FoundInOSL, stats.OSLMatchRate, stats.CKTotalParts, stats.ParameterCompleteness)
+		}
+	}
+
+	return stats
+}
+
 // Masterdata Analysis handler
 // Masterdata Analysis handler - GERÇEKÇİ VERİ KONTROLÜ
 func handleMasterDataAnalysis(w http.ResponseWriter, r *http.Request) {
@@ -2206,18 +2332,7 @@ func handleMasterDataAnalysis(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("🔍 Masterdata analysis requested for date: %s", date)
 
-	// ✅ FIX 1: Önce gerçek dosyaların var olup olmadığını kontrol et
-	_, hasTEI, hasOSL := checkFilesForDate(date)
-	if !hasTEI && !hasOSL {
-		log.Printf("❌ No TEI/OSL files found for date: %s", date)
-		sendJSON(w, APIResponse{
-			Success: false,
-			Message: fmt.Sprintf("Bu tarih (%s) için TEI/OSL dosyaları bulunamadı. Lütfen masterdata dosyalarının mevcut olduğundan emin olun.", date),
-		})
-		return
-	}
-
-	// ✅ FIX 2: Database'den GERÇEK master data issues'ları al
+	// ✅ 1. GERÇEK VERİ: Database'den master data issues'ları al
 	issues, _, err := getMasterDataIssues(date, 1, 100000)
 	if err != nil {
 		log.Printf("❌ getMasterDataIssues error: %v", err)
@@ -2227,28 +2342,8 @@ func handleMasterDataAnalysis(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("✅ Found %d master data issues for date %s", len(issues), date)
 
-	// ✅ FIX 3: Eğer hiç issue yoksa, analiz yapılmış mı kontrol et
-	if len(issues) == 0 {
-		var analysisExists bool
-		err = db.QueryRow("SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM masterdata_issues WHERE date = ?", date).Scan(&analysisExists)
-		if err != nil || !analysisExists {
-			log.Printf("⚠️ No masterdata analysis found in database for date: %s", date)
-			sendJSON(w, APIResponse{
-				Success: false,
-				Message: fmt.Sprintf("Bu tarih (%s) için masterdata analizi henüz yapılmamış. Lütfen 'Manuel Analiz' butonunu kullanarak analiz başlatın.", date),
-			})
-			return
-		}
-
-		// ✅ Analiz yapılmış ama sorun yok - GERÇEKÇİ başarı mesajı
-		log.Printf("✅ Analysis exists but no issues found for date: %s", date)
-		analysisData := createEmptyMasterdataAnalysis()
-		sendJSON(w, APIResponse{
-			Success: true,
-			Data:    map[string]interface{}{"analysis": analysisData},
-		})
-		return
-	}
+	// ✅ 2. İSTATİSTİK HESAPLAMA - GERÇEK DOSYALARDAN
+	stats := calculateMasterDataStatistics(date, issues)
 
 	// Issues'ları kategorize et
 	var teiNotFound []interface{}
@@ -2349,18 +2444,62 @@ func handleMasterDataAnalysis(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// ✅ FIX 4: GERÇEKÇİ statistics hesaplama
-	analysisData := createMasterdataAnalysisFromRealData(date,
-		teiNotFound, innerMismatch, missingDesc, validationResults,
-		teiIssues, oslIssues, ckViolations)
+	// ✅ 3. GERÇEK İSTATİSTİKLERLE GÜNCELLE
+	totalParts := stats.TotalParts
+	fullyCompliantParts := totalParts - oslIssues - ckViolations
+	overallComplianceRate := float64(fullyCompliantParts) / float64(totalParts) * 100
 
-	log.Printf("✅ Sending masterdata analysis to frontend: TEI issues=%d, OSL issues=%d", teiIssues, oslIssues)
+	// CK Compliance hesaplama
+	ckComplianceRate := float64(stats.CKTotalParts-ckViolations) / float64(stats.CKTotalParts) * 100
+
+	// Frontend'in beklediği format
+	analysisData := map[string]interface{}{
+		"tei_analysis_results": map[string]interface{}{
+			"statistics": map[string]interface{}{
+				"total_vpl_parts":      stats.TotalVPLParts,
+				"found_in_tei":         stats.FoundInTEI,
+				"tei_match_rate":       stats.TEIMatchRate,
+				"inner_ref_accuracy":   stats.InnerRefAccuracy,
+				"description_coverage": stats.DescriptionCoverage,
+			},
+			"found_in_tei":              []interface{}{},
+			"not_found_in_tei":          teiNotFound,
+			"inner_reference_incorrect": innerMismatch,
+			"missing_description":       missingDesc,
+		},
+		"osl_analysis_results": map[string]interface{}{
+			"statistics": map[string]interface{}{
+				"total_inner_references": stats.FoundInTEI,
+				"found_in_osl":           stats.FoundInOSL,
+				"osl_match_rate":         stats.OSLMatchRate,
+				"parameter_completeness": stats.ParameterCompleteness,
+				"ck_compliance_rate":     ckComplianceRate, // ✅ GERÇEK HESAPLAMA
+			},
+			"validation_statistics": map[string]interface{}{
+				"total_parts":                    totalParts,
+				"fully_compliant_parts":          fullyCompliantParts,
+				"overall_compliance_rate":        overallComplianceRate,
+				"required_param_compliance_rate": stats.RequiredParamComplianceRate,
+				"project_compliance_rate":        stats.ProjectComplianceRate,
+				"ck_compliance_rate":             ckComplianceRate, // ✅ GERÇEK HESAPLAMA
+				"required_param_violations":      oslIssues - ckViolations,
+				"project_param_violations":       0,
+				"ck_module_violations":           ckViolations,
+				"ck_module_parts":                stats.CKTotalParts, // ✅ GERÇEK TOPLAM
+			},
+			"validation_results": validationResults,
+		},
+	}
+
+	log.Printf("✅ Sending masterdata analysis: TEI issues=%d, OSL issues=%d, CK Total=%d, CK Violations=%d, CK Rate=%.1f%%",
+		teiIssues, oslIssues, stats.CKTotalParts, ckViolations, ckComplianceRate)
 
 	sendJSON(w, APIResponse{
 		Success: true,
 		Data:    map[string]interface{}{"analysis": analysisData},
 	})
 }
+
 func createEmptyMasterdataAnalysis() map[string]interface{} {
 	return map[string]interface{}{
 		"tei_analysis_results": map[string]interface{}{
@@ -2929,4 +3068,335 @@ func convertVPLIssuesToMissingRequired(issues []VPLIssueDetail) []map[string]int
 	}
 
 	return result
+}
+func loadConfig() Config {
+	log.Println("📋 Loading configuration...")
+
+	// Default config
+	defaultConfig := Config{
+		Database: DatabaseConfig{
+			ConnectionString: "server=localhost\\SQLEXPRESS;database=VPLAnalyzer;integrated security=SSPI;encrypt=true;trustservercertificate=true",
+		},
+		FileSources: FileSourceConfig{
+			VPLSourcePath:       "\\\\SERVER1\\share\\VPL\\",
+			TEISourcePath:       "\\\\SERVER2\\share\\Masterdata\\TEI\\",
+			OSLSourcePath:       "\\\\SERVER2\\share\\Masterdata\\OSL\\",
+			CopyIntervalMinutes: 30,
+		},
+		LocalPaths: LocalPathConfig{
+			VPLFiles:        "./vpl_files",
+			MasterDataFiles: "./masterdata_files",
+		},
+		Server: ServerConfig{
+			Port:        "8080",
+			AutoAnalyze: true,
+		},
+	}
+
+	// Config dosyasını oku
+	configFile := "config.json"
+	if data, err := os.ReadFile(configFile); err == nil {
+		var config Config
+		if err := json.Unmarshal(data, &config); err == nil {
+			log.Println("✅ Configuration loaded from config.json")
+			return config
+		} else {
+			log.Printf("⚠️ Error parsing config.json, using defaults: %v", err)
+		}
+	} else {
+		log.Println("📝 Creating default config.json")
+		saveConfig(defaultConfig, configFile)
+	}
+
+	return defaultConfig
+}
+func saveConfig(config Config, filename string) {
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		log.Printf("❌ Error marshaling config: %v", err)
+		return
+	}
+
+	if err := os.WriteFile(filename, data, 0644); err != nil {
+		log.Printf("❌ Error writing config file: %v", err)
+		return
+	}
+
+	log.Printf("✅ Config saved to %s", filename)
+}
+
+func startFileCopyService(config Config) {
+	log.Println("📂 Starting file copy service...")
+
+	// İlk kopyalama
+	copyFilesFromSources(config)
+
+	// Periyodik kopyalama
+	ticker := time.NewTicker(time.Duration(config.FileSources.CopyIntervalMinutes) * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			copyFilesFromSources(config)
+		}
+	}
+}
+func copyFilesFromSources(config Config) {
+	log.Printf("🔄 Starting file copy cycle at %s", time.Now().Format("15:04:05"))
+
+	totalCopied := 0
+
+	// VPL files copy
+	if copied := copyFilesFromPath(config.FileSources.VPLSourcePath, config.LocalPaths.VPLFiles, "VPL"); copied > 0 {
+		log.Printf("📋 Copied %d VPL files", copied)
+		totalCopied += copied
+	}
+
+	// TEI files copy
+	if copied := copyFilesFromPath(config.FileSources.TEISourcePath, config.LocalPaths.MasterDataFiles, "TEI"); copied > 0 {
+		log.Printf("📄 Copied %d TEI files", copied)
+		totalCopied += copied
+	}
+
+	// OSL files copy
+	if copied := copyFilesFromPath(config.FileSources.OSLSourcePath, config.LocalPaths.MasterDataFiles, "OSL"); copied > 0 {
+		log.Printf("⚙️ Copied %d OSL files", copied)
+		totalCopied += copied
+	}
+
+	if totalCopied > 0 {
+		log.Printf("✅ Copy cycle completed: %d files copied", totalCopied)
+	} else {
+		log.Println("ℹ️ Copy cycle completed: No new files")
+	}
+}
+func copyFilesFromPath(sourcePath, destPath, fileType string) int {
+	if sourcePath == "" {
+		return 0
+	}
+
+	// Hedef klasörü oluştur
+	if err := os.MkdirAll(destPath, 0755); err != nil {
+		log.Printf("❌ Error creating directory %s: %v", destPath, err)
+		return 0
+	}
+
+	// Kaynak klasörü kontrol et
+	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
+		log.Printf("⚠️ Source path not found: %s", sourcePath)
+		return 0
+	}
+
+	// Dosyaları listele
+	files, err := filepath.Glob(filepath.Join(sourcePath, "*"))
+	if err != nil {
+		log.Printf("❌ Error listing files in %s: %v", sourcePath, err)
+		return 0
+	}
+
+	copiedCount := 0
+
+	for _, file := range files {
+		fileName := filepath.Base(file)
+		destFile := filepath.Join(destPath, fileName)
+
+		// Dosya zaten var mı kontrol et
+		if _, err := os.Stat(destFile); err == nil {
+			continue // Zaten var, geç
+		}
+
+		// Dosya tipine göre filtrele
+		if !isValidFileForType(fileName, fileType) {
+			continue
+		}
+
+		// Dosyayı kopyala
+		if err := copyFile(file, destFile); err != nil {
+			log.Printf("❌ Error copying %s: %v", fileName, err)
+			continue
+		}
+
+		log.Printf("📥 Copied: %s", fileName)
+		copiedCount++
+	}
+
+	return copiedCount
+}
+func isValidFileForType(fileName, fileType string) bool {
+	fileName = strings.ToUpper(fileName)
+
+	switch fileType {
+	case "VPL":
+		return strings.Contains(fileName, "VPL") && strings.HasSuffix(fileName, ".TXT")
+	case "TEI":
+		return strings.HasPrefix(fileName, "SAP_") && strings.HasSuffix(fileName, ".TEI")
+	case "OSL":
+		return strings.HasPrefix(fileName, "SAP_") && strings.HasSuffix(fileName, ".OSL")
+	default:
+		return false
+	}
+}
+
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
+}
+
+func startFileWatcher(config Config) {
+	log.Println("👁️ Starting file watcher...")
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Printf("❌ Error creating file watcher: %v", err)
+		return
+	}
+	defer watcher.Close()
+
+	// Klasörleri izlemeye ekle
+	watchDirs := []string{
+		config.LocalPaths.VPLFiles,
+		config.LocalPaths.MasterDataFiles,
+	}
+
+	for _, dir := range watchDirs {
+		// Klasör yoksa oluştur
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			log.Printf("❌ Error creating watch directory %s: %v", dir, err)
+			continue
+		}
+
+		if err := watcher.Add(dir); err != nil {
+			log.Printf("❌ Error adding directory to watcher %s: %v", dir, err)
+		} else {
+			log.Printf("👁️ Watching directory: %s", dir)
+		}
+	}
+
+	// File events dinle
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+
+			// Sadece dosya oluşturma ve yazma eventlerini dinle
+			if event.Op&fsnotify.Create == fsnotify.Create || event.Op&fsnotify.Write == fsnotify.Write {
+				handleFileEvent(event.Name, config)
+			}
+
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			log.Printf("❌ File watcher error: %v", err)
+		}
+	}
+}
+
+func handleFileEvent(filePath string, config Config) {
+	fileName := filepath.Base(filePath)
+
+	// Geçici dosyaları ve sistem dosyalarını filtrele
+	if strings.HasPrefix(fileName, ".") || strings.HasPrefix(fileName, "~") {
+		return
+	}
+
+	log.Printf("📁 New file detected: %s", fileName)
+
+	// Dosya tipini belirle
+	fileType := detectFileType(fileName)
+	if fileType == "" {
+		log.Printf("⚠️ Unknown file type: %s", fileName)
+		return
+	}
+
+	// Auto analyze aktif mi?
+	if !config.Server.AutoAnalyze {
+		log.Printf("ℹ️ Auto analyze disabled, skipping: %s", fileName)
+		return
+	}
+
+	// Kısa bekleme (dosya yazımının tamamlanması için)
+	time.Sleep(2 * time.Second)
+
+	// Analizi tetikle
+	triggerAutoAnalysis(filePath, fileType)
+}
+
+func detectFileType(fileName string) string {
+	fileName = strings.ToUpper(fileName)
+
+	if strings.Contains(fileName, "VPL") && strings.HasSuffix(fileName, ".TXT") {
+		return "VPL"
+	} else if strings.HasPrefix(fileName, "SAP_") && strings.HasSuffix(fileName, ".TEI") {
+		return "TEI"
+	} else if strings.HasPrefix(fileName, "SAP_") && strings.HasSuffix(fileName, ".OSL") {
+		return "OSL"
+	}
+
+	return ""
+}
+
+func triggerAutoAnalysis(filePath, fileType string) {
+	fileName := filepath.Base(filePath)
+
+	// Dosyadan tarihi extract et
+	var date string
+	switch fileType {
+	case "VPL":
+		date = extractDateFromVPLFileName(fileName)
+	case "TEI":
+		date = extractDateFromTEIFileName(fileName)
+	case "OSL":
+		date = extractDateFromOSLFileName(fileName)
+	}
+
+	if date == "" {
+		log.Printf("⚠️ Could not extract date from file: %s", fileName)
+		return
+	}
+
+	log.Printf("🚀 Starting auto analysis for date: %s (triggered by %s)", date, fileName)
+
+	// Analizi async olarak çalıştır
+	go func() {
+		if err := runCompleteAnalysis(date); err != nil {
+			log.Printf("❌ Auto analysis failed for %s: %v", date, err)
+		} else {
+			log.Printf("✅ Auto analysis completed for %s", date)
+		}
+	}()
+}
+func updateDatabaseConnection(connectionString string) {
+	// Bu fonksiyon database connection string'ini runtime'da günceller
+	// Şu an için sadece log yazdırıyoruz, connection string global olarak kullanılacak
+	log.Printf("🔗 Using database connection: %s", maskConnectionString(connectionString))
+}
+
+func maskConnectionString(connStr string) string {
+	// Şifre kısmını maskerle (güvenlik için)
+	if strings.Contains(connStr, "password=") {
+		parts := strings.Split(connStr, ";")
+		for i, part := range parts {
+			if strings.Contains(strings.ToLower(part), "password=") {
+				parts[i] = "password=***"
+			}
+		}
+		return strings.Join(parts, ";")
+	}
+	return connStr
 }

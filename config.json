@@ -1,0 +1,19 @@
+{
+  "database": {
+    "connection_string": "server=localhost\\SQLEXPRESS;database=VPLAnalyzer;integrated security=SSPI;encrypt=true;trustservercertificate=true"
+  },
+  "file_sources": {
+    "vpl_source_path": "\\\\SERVER1\\share\\VPL\\",
+    "tei_source_path": "\\\\SERVER2\\share\\Masterdata\\TEI\\",
+    "osl_source_path": "\\\\SERVER2\\share\\Masterdata\\OSL\\",
+    "copy_interval_minutes": 30
+  },
+  "local_paths": {
+    "vpl_files": "./vpl_files",
+    "masterdata_files": "./masterdata_files"
+  },
+  "server": {
+    "port": "8080",
+    "auto_analyze": true
+  }
+}

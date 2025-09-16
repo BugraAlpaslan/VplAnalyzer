@@ -1091,7 +1091,93 @@
             showErrorState('analysis verisi yüklenirken bir hata oluştu: ' + error.message);
         });
 }
-
+function updateComplianceOverview(analysisData) {
+    console.log('🎨 Updating compliance overview');
+    
+    try {
+        if (analysisData.osl_analysis_results && analysisData.osl_analysis_results.validation_statistics) {
+            const stats = analysisData.osl_analysis_results.validation_statistics;
+            const score = stats.overall_compliance_rate || 0;
+            
+            // Score circle güncelle
+            updateScoreCircle(score);
+            const scoreElement = document.getElementById('scoreText');
+            if (scoreElement) {
+                scoreElement.textContent = `${score.toFixed(0)}%`;
+            }
+            
+            // ✅ GELİŞTİRİLMİŞ BREAKDOWN - Sayılar ile birlikte
+            const breakdownHtml = `
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Required Parametreler</span>
+                    <div class="breakdown-details">
+                        <span class="breakdown-value ${(stats.required_param_compliance_rate || 0) > 90 ? 'success' : 'error'}">${(stats.required_param_compliance_rate || 0).toFixed(1)}%</span>
+                        <span class="breakdown-count">(${stats.total_parts - (stats.required_param_violations || 0)}/${stats.total_parts})</span>
+                    </div>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">PROJECT Parametreleri</span>
+                    <div class="breakdown-details">
+                        <span class="breakdown-value ${(stats.project_compliance_rate || 0) > 90 ? 'success' : 'warning'}">${(stats.project_compliance_rate || 0).toFixed(1)}%</span>
+                        <span class="breakdown-count">(${stats.total_parts - (stats.project_param_violations || 0)}/${stats.total_parts})</span>
+                    </div>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">CK Modül Uyumluluğu</span>
+                    <div class="breakdown-details">
+                        <span class="breakdown-value ${(stats.ck_compliance_rate || 0) > 80 ? 'success' : 'error'}">${(stats.ck_compliance_rate || 0).toFixed(1)}%</span>
+                        <span class="breakdown-count">(${(stats.ck_module_parts || 0) - (stats.ck_module_violations || 0)}/${stats.ck_module_parts || 0})</span>
+                    </div>
+                </div>
+            `;
+            
+            const breakdownElement = document.getElementById('complianceBreakdown');
+            if (breakdownElement) {
+                breakdownElement.innerHTML = breakdownHtml;
+            }
+            
+            // ✅ GELİŞTİRİLMİŞ CK STATS - Daha detaylı
+            const ckStatsHtml = `
+                <div class="ck-stat">
+                    <span class="ck-stat-label">CK Modülü Toplam:</span>
+                    <span class="ck-stat-value success">${stats.ck_module_parts || 0}</span>
+                </div>
+                <div class="ck-stat">
+                    <span class="ck-stat-label">CK Başarılı:</span>
+                    <span class="ck-stat-value success">${(stats.ck_module_parts || 0) - (stats.ck_module_violations || 0)}</span>
+                </div>
+                <div class="ck-stat">
+                    <span class="ck-stat-label">CK Violation:</span>
+                    <span class="ck-stat-value error">${stats.ck_module_violations || 0}</span>
+                </div>
+                <div class="ck-stat">
+                    <span class="ck-stat-label">CK Uyumluluk:</span>
+                    <span class="ck-stat-value ${(stats.ck_compliance_rate || 0) > 80 ? 'success' : 'error'}">${(stats.ck_compliance_rate || 0).toFixed(1)}%</span>
+                </div>
+                <div class="ck-stat-separator"></div>
+                <div class="ck-stat">
+                    <span class="ck-stat-label">Hesaplama:</span>
+                    <span class="ck-stat-formula">${(stats.ck_module_parts || 0) - (stats.ck_module_violations || 0)} / ${stats.ck_module_parts || 0}</span>
+                </div>
+            `;
+            
+            const ckStatsElement = document.getElementById('ckStats');
+            if (ckStatsElement) {
+                ckStatsElement.innerHTML = ckStatsHtml;
+            }
+            
+            console.log('✅ Compliance overview updated with real CK data:', {
+                ckTotal: stats.ck_module_parts,
+                ckViolations: stats.ck_module_violations,
+                ckRate: (stats.ck_compliance_rate || 0).toFixed(1) + '%'
+            });
+        } else {
+            console.warn('⚠️ No validation statistics found for compliance overview');
+        }
+    } catch (error) {
+        console.error('❌ Error updating compliance overview:', error);
+    }
+}
         // Update masterdata display with real data
 function loadCustomDate() {
     const dateInput = document.getElementById('customDate');

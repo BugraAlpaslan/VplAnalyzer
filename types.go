@@ -109,6 +109,49 @@ type VPLAnalysisSummary struct {
 	HasIssues         bool   `json:"has_issues"` // issues_found > 0
 }
 
+type MasterDataStats struct {
+	TotalVPLParts               int
+	FoundInTEI                  int
+	TEIMatchRate                float64
+	InnerRefAccuracy            float64
+	DescriptionCoverage         float64
+	TotalParts                  int
+	FoundInOSL                  int
+	OSLMatchRate                float64
+	ParameterCompleteness       float64
+	RequiredParamComplianceRate float64
+	ProjectComplianceRate       float64
+	CKTotalParts                int
+}
+
+type Config struct {
+	Database    DatabaseConfig   `json:"database"`
+	FileSources FileSourceConfig `json:"file_sources"`
+	LocalPaths  LocalPathConfig  `json:"local_paths"`
+	Server      ServerConfig     `json:"server"`
+}
+
+type DatabaseConfig struct {
+	ConnectionString string `json:"connection_string"`
+}
+
+type FileSourceConfig struct {
+	VPLSourcePath       string `json:"vpl_source_path"`
+	TEISourcePath       string `json:"tei_source_path"`
+	OSLSourcePath       string `json:"osl_source_path"`
+	CopyIntervalMinutes int    `json:"copy_interval_minutes"`
+}
+
+type LocalPathConfig struct {
+	VPLFiles        string `json:"vpl_files"`
+	MasterDataFiles string `json:"masterdata_files"`
+}
+
+type ServerConfig struct {
+	Port        string `json:"port"`
+	AutoAnalyze bool   `json:"auto_analyze"`
+}
+
 // Master Data Analysis Summary - what frontend sees first (calculated from MasterDataIssue table)
 type MasterDataAnalysisSummary struct {
 	Date               string  `json:"date"`
@@ -127,6 +170,7 @@ type MasterDataAnalysisSummary struct {
 // =============================================================================
 
 // VPL Issues Modal - when user clicks "250 Issues Found"
+
 type VPLIssuesModal struct {
 	Issues      []VPLIssueDetail `json:"issues"`
 	TotalCount  int              `json:"total_count"`
