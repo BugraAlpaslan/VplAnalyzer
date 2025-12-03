@@ -37,8 +37,10 @@ const (
 
 // Default users
 var defaultUsers = map[string]string{
-	"admin": "admin123",
-	"user":  "vpl2024",
+	"admin":  "admin123",
+	"user":   "user2025",
+	"guest":  "guest2025",
+	"kcolak": "kcolak7878",
 }
 
 // =============================================================================
@@ -99,14 +101,241 @@ func initializeDefaultData() error {
 	return nil
 }
 
+// =============================================================================
+//
+//                    VPL ANALYZER V2 - PERFORMANS ÇÖZÜMÜ
+//
+//                    TALİMATLAR:
+//                    1. main.go'da şu fonksiyonları SİL:
+//                       - runCompleteAnalysis
+//                       - compareVPLFiles
+//                       - checkMissingRequiredParts
+//                       - saveVPLIssues
+//
+//                    2. Bu dosyadaki TÜM kodu main.go'ya YAPIŞTIR
+//
+// =============================================================================
+
+// =============================================================================
+// FONKSİYON 1: filterCommonVINs (YENİ EKLE)
+// =============================================================================
+
+// filterCommonVINs - İki VPL dosyasındaki ortak VIN'leri filtreler
+func filterCommonVINs(previousVPL, currentVPL []VPLRecord) ([]VPLRecord, []VPLRecord, map[string]bool) {
+	// Önceki dosyadaki VIN'ler
+	prevVINs := make(map[string]bool)
+	for _, r := range previousVPL {
+		prevVINs[r.VIN] = true
+	}
+
+	// Şimdiki dosyadaki VIN'ler
+	currVINs := make(map[string]bool)
+	for _, r := range currentVPL {
+		currVINs[r.VIN] = true
+	}
+
+	// Ortak VIN'ler
+	commonVINs := make(map[string]bool)
+	for vin := range prevVINs {
+		if currVINs[vin] {
+			commonVINs[vin] = true
+		}
+	}
+
+	// Filtrelenmiş kayıtlar
+	var filteredPrev []VPLRecord
+	for _, r := range previousVPL {
+		if commonVINs[r.VIN] {
+			filteredPrev = append(filteredPrev, r)
+		}
+	}
+
+	var filteredCurr []VPLRecord
+	for _, r := range currentVPL {
+		if commonVINs[r.VIN] {
+			filteredCurr = append(filteredCurr, r)
+		}
+	}
+
+	log.Printf("🔎 VIN Filter: %d prev VINs, %d curr VINs → %d common VINs",
+		len(prevVINs), len(currVINs), len(commonVINs))
+	log.Printf("🔎 Records: %d prev → %d filtered, %d curr → %d filtered",
+		len(previousVPL), len(filteredPrev), len(currentVPL), len(filteredCurr))
+
+	return filteredPrev, filteredCurr, commonVINs
+}
+
+// =============================================================================
+// FONKSİYON 2: compareVPLFiles (ESKİSİNİ SİL, BUNU YAPIŞTIR)
+// =============================================================================
+
+// compareVPLFiles - VPL dosyalarını karşılaştır, GRUPLU sonuç döndür
+func compareVPLFiles(date string, previousVPL, currentVPL []VPLRecord) []VPLIssue {
+	// Değişiklik grupları: part -> []VIN
+	addedGroups := make(map[string][]string)
+	removedGroups := make(map[string][]string)
+	projectForPart := make(map[string]string)
+
+	// Map'ler oluştur
+	prevMap := make(map[string]VPLRecord)
+	currMap := make(map[string]VPLRecord)
+
+	for _, record := range previousVPL {
+		key := record.VIN + "|" + record.PartName
+		prevMap[key] = record
+		projectForPart[record.PartName] = record.DetectedProject
+	}
+
+	for _, record := range currentVPL {
+		key := record.VIN + "|" + record.PartName
+		currMap[key] = record
+		projectForPart[record.PartName] = record.DetectedProject
+	}
+
+	// Eklenen parçalar (current'ta var, previous'ta yok)
+	for key, currRecord := range currMap {
+		if _, exists := prevMap[key]; !exists {
+			addedGroups[currRecord.PartName] = append(addedGroups[currRecord.PartName], currRecord.VIN)
+		}
+	}
+
+	// Silinen parçalar (previous'ta var, current'ta yok)
+	for key, prevRecord := range prevMap {
+		if _, exists := currMap[key]; !exists {
+			removedGroups[prevRecord.PartName] = append(removedGroups[prevRecord.PartName], prevRecord.VIN)
+		}
+	}
+
+	// Grupları VPLIssue'ya dönüştür
+	var issues []VPLIssue
+
+	for part, vins := range addedGroups {
+		vinsJSON, _ := json.Marshal(vins)
+		issues = append(issues, VPLIssue{
+			Date:      date,
+			VIN:       fmt.Sprintf("GROUPED_%d_VINs", len(vins)),
+			Project:   projectForPart[part],
+			IssueType: VPL_ISSUE_ADDED,
+			NewPart:   part,
+			Details:   string(vinsJSON),
+		})
+	}
+
+	for part, vins := range removedGroups {
+		vinsJSON, _ := json.Marshal(vins)
+		issues = append(issues, VPLIssue{
+			Date:      date,
+			VIN:       fmt.Sprintf("GROUPED_%d_VINs", len(vins)),
+			Project:   projectForPart[part],
+			IssueType: VPL_ISSUE_REMOVED,
+			OldPart:   part,
+			Details:   string(vinsJSON),
+		})
+	}
+
+	// Toplam VIN sayısını hesapla (log için)
+	totalAddedVINs := 0
+	for _, vins := range addedGroups {
+		totalAddedVINs += len(vins)
+	}
+	totalRemovedVINs := 0
+	for _, vins := range removedGroups {
+		totalRemovedVINs += len(vins)
+	}
+
+	log.Printf("📊 VPL Comparison: %d added groups (%d VINs), %d removed groups (%d VINs)",
+		len(addedGroups), totalAddedVINs, len(removedGroups), totalRemovedVINs)
+	log.Printf("📊 Total: %d groups instead of %d individual issues",
+		len(issues), totalAddedVINs+totalRemovedVINs)
+
+	return issues
+}
+
+// =============================================================================
+// FONKSİYON 3: checkMissingRequiredParts (ESKİSİNİ SİL, BUNU YAPIŞTIR)
+// =============================================================================
+
+// checkMissingRequiredParts - Eksik parçaları GRUPLU döndürür
+func checkMissingRequiredParts(date string, vplRecords []VPLRecord) []VPLIssue {
+	// Parça bazlı gruplama: project|part -> []VIN
+	missingGroups := make(map[string][]string)
+
+	// VPL kayıtlarını project'e göre grupla
+	projectRecords := make(map[string][]VPLRecord)
+	for _, record := range vplRecords {
+		projectRecords[record.DetectedProject] = append(projectRecords[record.DetectedProject], record)
+	}
+
+	// Her project için kontrol
+	for project, records := range projectRecords {
+		requiredParts, err := getRequiredPartsForProject(project)
+		if err != nil {
+			log.Printf("Warning: could not get required parts for project %s: %v", project, err)
+			continue
+		}
+
+		// VIN bazlı kayıtlar
+		vinRecords := make(map[string][]VPLRecord)
+		for _, record := range records {
+			vinRecords[record.VIN] = append(vinRecords[record.VIN], record)
+		}
+
+		// Her VIN için eksik parça kontrolü
+		for vin, vinParts := range vinRecords {
+			for _, requiredPart := range requiredParts {
+				if !hasRequiredPart(vinParts, requiredPart) {
+					groupKey := project + "|" + requiredPart
+					missingGroups[groupKey] = append(missingGroups[groupKey], vin)
+				}
+			}
+		}
+	}
+
+	// Grupları VPLIssue'ya dönüştür
+	var issues []VPLIssue
+	for groupKey, vins := range missingGroups {
+		parts := strings.Split(groupKey, "|")
+		project := parts[0]
+		missingPart := parts[1]
+
+		// VIN listesini JSON'a çevir
+		vinsJSON, _ := json.Marshal(vins)
+
+		issues = append(issues, VPLIssue{
+			Date:        date,
+			VIN:         fmt.Sprintf("GROUPED_%d_VINs", len(vins)),
+			Project:     project,
+			IssueType:   VPL_ISSUE_MISSING_REQ,
+			MissingPart: missingPart,
+			Details:     string(vinsJSON),
+		})
+	}
+
+	// Toplam VIN sayısını hesapla (log için)
+	totalVINs := 0
+	for _, vins := range missingGroups {
+		totalVINs += len(vins)
+	}
+
+	log.Printf("📊 Missing Required Parts: %d groups (covering %d VINs) instead of %d individual issues",
+		len(issues), totalVINs, totalVINs)
+
+	return issues
+}
+
+// =============================================================================
+// FONKSİYON 4: saveVPLIssues (ESKİSİNİ SİL, BUNU YAPIŞTIR)
+// =============================================================================
+
+// saveVPLIssues - VPL issue'larını database'e kaydeder (artık gruplu, çok hızlı)
 func saveVPLIssues(date string, issues []VPLIssue) error {
-	// Clear existing issues for this date
+	// Önce bu tarihe ait eski kayıtları sil
 	_, err := db.Exec("DELETE FROM vpl_issues WHERE date = ?", date)
 	if err != nil {
 		return fmt.Errorf("failed to clear existing VPL issues: %v", err)
 	}
 
-	// Insert new issues
+	// Her grup için INSERT (artık çok az kayıt)
 	for _, issue := range issues {
 		_, err := db.Exec(`INSERT INTO vpl_issues 
 			(date, vin, project, issue_type, old_part, new_part, missing_part, details) 
@@ -124,10 +353,133 @@ func saveVPLIssues(date string, issues []VPLIssue) error {
 		}
 	}
 
-	log.Printf("✅ Saved %d VPL issues for date %s", len(issues), date)
+	log.Printf("✅ Saved %d VPL issue groups for date %s", len(issues), date)
 	return nil
 }
 
+// =============================================================================
+// FONKSİYON 5: runCompleteAnalysis (ESKİSİNİ SİL, BUNU YAPIŞTIR)
+// =============================================================================
+
+func runCompleteAnalysis(date string) error {
+	log.Printf("🚀 Starting complete analysis for date: %s", date)
+	startTime := time.Now()
+
+	// 1. Find required files
+	currentVPLFile := findVPLFileForDate(date)
+	if currentVPLFile == "" {
+		return fmt.Errorf("VPL file not found for date %s", date)
+	}
+
+	// Calculate previous date for VPL comparison
+	parsedDate, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return fmt.Errorf("invalid date format: %v", err)
+	}
+	previousDate := parsedDate.AddDate(0, 0, -1).Format("2006-01-02")
+	previousVPLFile := findVPLFileForDate(previousDate)
+
+	// ÖNCEKİ VPL KONTROLÜ
+	if previousVPLFile == "" {
+		log.Printf("❌ Previous VPL file not found for date %s (needed for comparison with %s)", previousDate, date)
+		return fmt.Errorf("previous VPL file not found for date %s - cannot perform comparison analysis", previousDate)
+	}
+
+	log.Printf("✅ Both VPL files found: Current=%s, Previous=%s",
+		filepath.Base(currentVPLFile), filepath.Base(previousVPLFile))
+
+	teiFile := findTEIFileForDate(date)
+	oslFile := findOSLFileForDate(date)
+
+	// 2. Read VPL files
+	currentVPL, err := readVPLFile(currentVPLFile)
+	if err != nil {
+		return fmt.Errorf("failed to read current VPL: %v", err)
+	}
+
+	previousVPL, err := readVPLFile(previousVPLFile)
+	if err != nil {
+		return fmt.Errorf("failed to read previous VPL: %v", err)
+	}
+
+	// 3. ✅ ORTAK VIN FİLTRESİ UYGULA
+	filteredPrev, filteredCurr, commonVINs := filterCommonVINs(previousVPL, currentVPL)
+
+	var vplIssues []VPLIssue
+
+	// 4. VPL Comparison (sadece ortak VIN'ler için, GRUPLU)
+	if len(commonVINs) > 0 {
+		vplIssues = compareVPLFiles(date, filteredPrev, filteredCurr)
+	} else {
+		log.Printf("⚠️ No common VINs found between files, skipping comparison")
+	}
+
+	// 5. ✅ GRUPLU Missing Required Parts (sadece ortak VIN'ler için)
+	missingRequired := checkMissingRequiredParts(date, filteredCurr)
+	vplIssues = append(vplIssues, missingRequired...)
+	log.Printf("📊 Total VPL issues: %d groups", len(vplIssues))
+
+	// 6. Extract customer references from VPL for master data analysis
+	customerRefs := extractCustomerReferences(currentVPL)
+
+	var teiIssues []MasterDataIssue
+	var oslIssues []MasterDataIssue
+
+	// 7. TEI Analysis (if file exists)
+	if teiFile != "" {
+		teiRecords, err := readTEIFile(teiFile)
+		if err != nil {
+			log.Printf("Warning: failed to read TEI file: %v", err)
+		} else {
+			teiIssues = validateTEIReferences(date, customerRefs, teiRecords)
+
+			// 8. OSL Analysis (if file exists and we have TEI data)
+			if oslFile != "" {
+				oslRecords, err := readOSLFile(oslFile)
+				if err != nil {
+					log.Printf("Warning: failed to read OSL file: %v", err)
+				} else {
+					innerRefs := extractInnerReferences(customerRefs, teiRecords)
+					oslIssues = validateOSLParameters(date, innerRefs, oslRecords)
+				}
+			}
+		}
+	}
+
+	// 9. Save all issues to database
+	if err := saveVPLIssues(date, vplIssues); err != nil {
+		return fmt.Errorf("failed to save VPL issues: %v", err)
+	}
+
+	if err := saveMasterDataIssues(date, teiIssues, oslIssues); err != nil {
+		return fmt.Errorf("failed to save master data issues: %v", err)
+	}
+
+	processingTime := time.Since(startTime)
+	log.Printf("✅ Complete analysis finished in %v - VPL: %d issue groups, Master Data: %d issues",
+		processingTime, len(vplIssues), len(teiIssues)+len(oslIssues))
+
+	return nil
+}
+
+// =============================================================================
+// FONKSİYON 6: getVINsFromGroupedIssue (YENİ EKLE - Frontend için yardımcı)
+// =============================================================================
+
+// getVINsFromGroupedIssue - Gruplu issue'dan VIN listesini çeker
+func getVINsFromGroupedIssue(issueDetails string) []string {
+	var vins []string
+
+	if issueDetails != "" && strings.HasPrefix(issueDetails, "[") {
+		err := json.Unmarshal([]byte(issueDetails), &vins)
+		if err != nil {
+			log.Printf("Warning: could not parse VINs from issue details: %v", err)
+			return []string{}
+		}
+	}
+
+	return vins
+}
 func saveMasterDataIssues(date string, teiIssues, oslIssues []MasterDataIssue) error {
 	// Clear existing issues for this date
 	_, err := db.Exec("DELETE FROM masterdata_issues WHERE date = ?", date)
@@ -617,220 +969,13 @@ func parseVPLRecord(line string) (VPLRecord, error) {
 	return record, nil
 }
 
-// Dosya varlığını kontrol etme
-func fileExists(filePath string) bool {
-	_, err := os.Stat(filePath)
-	return !os.IsNotExist(err)
-}
-
-// Mevcut dosyaları listeleme (debug için)
-func listAvailableFiles() {
-	log.Println("📁 Available VPL files:")
-	vplFiles, _ := filepath.Glob("./vpl_files/*.TXT")
-	for _, file := range vplFiles {
-		filename := filepath.Base(file)
-		date := extractDateFromVPLFileName(filename)
-		log.Printf("  - %s (Date: %s)", filename, date)
-	}
-
-	log.Println("📁 Available TEI files:")
-	teiFiles, _ := filepath.Glob("./masterdata_files/*.TEI")
-	for _, file := range teiFiles {
-		filename := filepath.Base(file)
-		date := extractDateFromTEIFileName(filename)
-		log.Printf("  - %s (Date: %s)", filename, date)
-	}
-
-	log.Println("📁 Available OSL files:")
-	oslFiles, _ := filepath.Glob("./masterdata_files/*.OSL")
-	for _, file := range oslFiles {
-		filename := filepath.Base(file)
-		date := extractDateFromOSLFileName(filename)
-		log.Printf("  - %s (Date: %s)", filename, date)
-	}
-}
-
 // Belirli tarih için tüm dosyaları kontrol etme
 
 // =============================================================================
 // ANALYSIS FUNCTIONS (Main Logic - Single Pass Analysis)
 // =============================================================================
 
-func runCompleteAnalysis(date string) error {
-	log.Printf("🚀 Starting complete analysis for date: %s", date)
-	startTime := time.Now()
-
-	// 1. Find required files
-	currentVPLFile := findVPLFileForDate(date)
-	if currentVPLFile == "" {
-		return fmt.Errorf("VPL file not found for date %s", date)
-	}
-
-	// Calculate previous date for VPL comparison
-	parsedDate, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		return fmt.Errorf("invalid date format: %v", err)
-	}
-	previousDate := parsedDate.AddDate(0, 0, -1).Format("2006-01-02")
-	previousVPLFile := findVPLFileForDate(previousDate)
-
-	teiFile := findTEIFileForDate(date)
-	oslFile := findOSLFileForDate(date)
-
-	// 2. Read VPL files and compare
-	currentVPL, err := readVPLFile(currentVPLFile)
-	if err != nil {
-		return fmt.Errorf("failed to read current VPL: %v", err)
-	}
-
-	var vplIssues []VPLIssue
-	if previousVPLFile != "" {
-		previousVPL, err := readVPLFile(previousVPLFile)
-		if err != nil {
-			log.Printf("Warning: could not read previous VPL file: %v", err)
-		} else {
-			vplIssues = compareVPLFiles(date, previousVPL, currentVPL)
-		}
-	}
-
-	// 3. Check missing required parts
-	missingRequired := checkMissingRequiredParts(date, currentVPL)
-	vplIssues = append(vplIssues, missingRequired...)
-
-	// 4. Extract customer references from VPL for master data analysis
-	customerRefs := extractCustomerReferences(currentVPL)
-
-	var teiIssues []MasterDataIssue
-	var oslIssues []MasterDataIssue
-
-	// 5. TEI Analysis (if file exists)
-	if teiFile != "" {
-		teiRecords, err := readTEIFile(teiFile)
-		if err != nil {
-			log.Printf("Warning: failed to read TEI file: %v", err)
-		} else {
-			teiIssues = validateTEIReferences(date, customerRefs, teiRecords)
-
-			// 6. OSL Analysis (if file exists and we have TEI data)
-			if oslFile != "" {
-				oslRecords, err := readOSLFile(oslFile)
-				if err != nil {
-					log.Printf("Warning: failed to read OSL file: %v", err)
-				} else {
-					innerRefs := extractInnerReferences(customerRefs, teiRecords)
-					oslIssues = validateOSLParameters(date, innerRefs, oslRecords)
-				}
-			}
-		}
-	}
-
-	// 7. Save all issues to database
-	if err := saveVPLIssues(date, vplIssues); err != nil {
-		return fmt.Errorf("failed to save VPL issues: %v", err)
-	}
-
-	if err := saveMasterDataIssues(date, teiIssues, oslIssues); err != nil {
-		return fmt.Errorf("failed to save master data issues: %v", err)
-	}
-
-	processingTime := time.Since(startTime)
-	log.Printf("✅ Complete analysis finished in %v - VPL: %d issues, Master Data: %d issues",
-		processingTime, len(vplIssues), len(teiIssues)+len(oslIssues))
-
-	return nil
-}
-
 // VPL dosyalarını karşılaştır ve detaylı change analizi yap
-func compareVPLFiles(date string, previousVPL, currentVPL []VPLRecord) []VPLIssue {
-	var issues []VPLIssue
-
-	// Create maps for easy lookup - VIN+PREFIX+BASE+SUFFIX combination
-	prevMap := make(map[string]VPLRecord)
-	currMap := make(map[string]VPLRecord)
-
-	// Create separate maps for part component tracking
-	prevPartMap := make(map[string]map[string]VPLRecord) // VIN -> PartName -> Record
-	currPartMap := make(map[string]map[string]VPLRecord) // VIN -> PartName -> Record
-
-	// Build previous maps
-	for _, record := range previousVPL {
-		key := record.VIN + "|" + record.PartName
-		prevMap[key] = record
-
-		if prevPartMap[record.VIN] == nil {
-			prevPartMap[record.VIN] = make(map[string]VPLRecord)
-		}
-		prevPartMap[record.VIN][record.PartName] = record
-	}
-
-	// Build current maps
-	for _, record := range currentVPL {
-		key := record.VIN + "|" + record.PartName
-		currMap[key] = record
-
-		if currPartMap[record.VIN] == nil {
-			currPartMap[record.VIN] = make(map[string]VPLRecord)
-		}
-		currPartMap[record.VIN][record.PartName] = record
-	}
-
-	// Find added parts (in current but not in previous)
-	for key, currRecord := range currMap {
-		if _, exists := prevMap[key]; !exists {
-			// Check if this is a component change vs completely new part
-			componentChange := findComponentChange(currRecord, prevPartMap[currRecord.VIN])
-
-			if componentChange != "" {
-				// This is a component change, not a new part
-				issues = append(issues, VPLIssue{
-					Date:      date,
-					VIN:       currRecord.VIN,
-					Project:   currRecord.DetectedProject,
-					IssueType: componentChange, // PREFIX_CHANGED, BASE_CHANGED, SUFFIX_CHANGED
-					OldPart:   getOldPartForChange(currRecord, prevPartMap[currRecord.VIN], componentChange),
-					NewPart:   currRecord.PartName,
-					Details:   fmt.Sprintf("%s changed", getComponentName(componentChange)),
-				})
-			} else {
-				// Completely new part
-				issues = append(issues, VPLIssue{
-					Date:      date,
-					VIN:       currRecord.VIN,
-					Project:   currRecord.DetectedProject,
-					IssueType: VPL_ISSUE_ADDED,
-					NewPart:   currRecord.PartName,
-					Details:   "Part added",
-				})
-			}
-		}
-	}
-
-	// Find removed parts (in previous but not in current)
-	for key, prevRecord := range prevMap {
-		if _, exists := currMap[key]; !exists {
-			// Check if this part was modified instead of removed
-			if !isPartModified(prevRecord, currPartMap[prevRecord.VIN]) {
-				issues = append(issues, VPLIssue{
-					Date:      date,
-					VIN:       prevRecord.VIN,
-					Project:   prevRecord.DetectedProject,
-					IssueType: VPL_ISSUE_REMOVED,
-					OldPart:   prevRecord.PartName,
-					Details:   "Part removed",
-				})
-			}
-		}
-	}
-
-	log.Printf("📊 VPL Comparison: %d added, %d removed, %d prefix changed, %d base changed, %d suffix changed",
-		countIssuesByType(issues, VPL_ISSUE_ADDED),
-		countIssuesByType(issues, VPL_ISSUE_REMOVED),
-		countIssuesByType(issues, "PREFIX_CHANGED"),
-		countIssuesByType(issues, "BASE_CHANGED"),
-		countIssuesByType(issues, "SUFFIX_CHANGED"))
-
-	return issues
-}
 
 // Check if a part has component changes (PREFIX, BASE, or SUFFIX)
 func findComponentChange(currentRecord VPLRecord, previousParts map[string]VPLRecord) string {
@@ -936,50 +1081,6 @@ func getComponentName(changeType string) string {
 // Update types.go - add new issue types
 
 // Update frontend conversion function
-
-func checkMissingRequiredParts(date string, vplRecords []VPLRecord) []VPLIssue {
-	var issues []VPLIssue
-
-	// Group VPL records by project
-	projectRecords := make(map[string][]VPLRecord)
-	for _, record := range vplRecords {
-		projectRecords[record.DetectedProject] = append(projectRecords[record.DetectedProject], record)
-	}
-
-	// Check each project
-	for project, records := range projectRecords {
-		requiredParts, err := getRequiredPartsForProject(project)
-		if err != nil {
-			log.Printf("Warning: could not get required parts for project %s: %v", project, err)
-			continue
-		}
-
-		// Group records by VIN
-		vinRecords := make(map[string][]VPLRecord)
-		for _, record := range records {
-			vinRecords[record.VIN] = append(vinRecords[record.VIN], record)
-		}
-
-		// Check each VIN for missing required parts
-		for vin, vinParts := range vinRecords {
-			for _, requiredPart := range requiredParts {
-				if !hasRequiredPart(vinParts, requiredPart) {
-					issues = append(issues, VPLIssue{
-						Date:        date,
-						VIN:         vin,
-						Project:     project,
-						IssueType:   VPL_ISSUE_MISSING_REQ,
-						MissingPart: requiredPart,
-						Details:     fmt.Sprintf("Missing required part: %s", requiredPart),
-					})
-				}
-			}
-		}
-	}
-
-	log.Printf("📊 Missing Required Parts: %d issues found", len(issues))
-	return issues
-}
 
 func hasRequiredPart(vinParts []VPLRecord, requiredPart string) bool {
 	// Handle OR groups: !A-OR-B!
@@ -3400,3 +3501,5 @@ func maskConnectionString(connStr string) string {
 	}
 	return connStr
 }
+
+//

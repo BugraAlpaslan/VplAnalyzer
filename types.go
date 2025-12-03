@@ -170,6 +170,17 @@ type MasterDataAnalysisSummary struct {
 // =============================================================================
 
 // VPL Issues Modal - when user clicks "250 Issues Found"
+type VPLIssueGroupV2 struct {
+	Date         string   `json:"date"`
+	Project      string   `json:"project"`
+	IssueType    string   `json:"issue_type"`
+	OldPart      string   `json:"old_part,omitempty"`
+	NewPart      string   `json:"new_part,omitempty"`
+	MissingPart  string   `json:"missing_part,omitempty"`
+	Details      string   `json:"details"`
+	AffectedVINs []string `json:"affected_vins"`
+	Count        int      `json:"count"`
+}
 
 type VPLIssuesModal struct {
 	Issues      []VPLIssueDetail `json:"issues"`

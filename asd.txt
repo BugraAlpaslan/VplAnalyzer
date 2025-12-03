@@ -1,0 +1,278 @@
+-- VPL Analyzer Database Schema for SQL Server Express
+-- Run this script in SQL Server Management Studio or sqlcmd
+
+-- Create Database
+CREATE DATABASE VPLAnalyzer;
+GO
+
+USE VPLAnalyzer;
+GO
+
+-- =============================================================================
+-- 1. USERS TABLE (Authentication)
+-- =============================================================================
+CREATE TABLE users (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    username NVARCHAR(50) NOT NULL UNIQUE,
+    password_hash NVARCHAR(256) NOT NULL,
+    created_at DATETIME2 DEFAULT GETDATE()
+);
+
+-- Insert default users
+INSERT INTO users (username, password_hash) VALUES 
+('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'),
+('user', '54ab503327fa4062208223c5ec3d3e983a811d88b9ba42cc0b403597401c21d7');
+
+-- =============================================================================
+-- 2. SESSIONS TABLE (Login Sessions)
+-- =============================================================================
+CREATE TABLE sessions (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    token NVARCHAR(256) NOT NULL UNIQUE,
+    username NVARCHAR(50) NOT NULL,
+    created_at DATETIME2 DEFAULT GETDATE(),
+    expires_at DATETIME2 NOT NULL,
+    FOREIGN KEY (username) REFERENCES users(username)
+);
+
+-- =============================================================================
+-- 3. VPL ISSUES TABLE (VPL Analysis Results)
+-- =============================================================================
+CREATE TABLE vpl_issues (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    date DATE NOT NULL,
+    vin NVARCHAR(20) NOT NULL,
+    project NVARCHAR(50) NOT NULL,
+    issue_type NVARCHAR(50) NOT NULL,
+    old_part NVARCHAR(100) NULL,
+    new_part NVARCHAR(100) NULL,
+    missing_part NVARCHAR(100) NULL,
+    details NVARCHAR(500) NULL,
+    created_at DATETIME2 DEFAULT GETDATE()
+);
+
+-- Create indexes for performance
+CREATE INDEX IX_vpl_issues_date ON vpl_issues(date);
+CREATE INDEX IX_vpl_issues_vin ON vpl_issues(vin);
+CREATE INDEX IX_vpl_issues_issue_type ON vpl_issues(issue_type);
+
+-- =============================================================================
+-- 4. MASTERDATA ISSUES TABLE (TEI/OSL Analysis Results)
+-- =============================================================================
+CREATE TABLE masterdata_issues (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    date DATE NOT NULL,
+    part_name NVARCHAR(100) NOT NULL,
+    inner_ref NVARCHAR(100) NULL,
+    issue_type NVARCHAR(50) NOT NULL,
+    expected NVARCHAR(200) NULL,
+    actual NVARCHAR(200) NULL,
+    details NVARCHAR(500) NULL,
+    created_at DATETIME2 DEFAULT GETDATE()
+);
+
+-- Create indexes for performance
+CREATE INDEX IX_masterdata_issues_date ON masterdata_issues(date);
+CREATE INDEX IX_masterdata_issues_part_name ON masterdata_issues(part_name);
+CREATE INDEX IX_masterdata_issues_issue_type ON masterdata_issues(issue_type);
+
+-- =============================================================================
+-- 5. REQUIRED PARTS TABLE (Configuration)
+-- =============================================================================
+CREATE TABLE required_parts (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    project_name NVARCHAR(50) NOT NULL,
+    required_part NVARCHAR(100) NOT NULL,
+    created_at DATETIME2 DEFAULT GETDATE(),
+    UNIQUE(project_name, required_part)
+);
+
+-- Insert sample required parts
+INSERT INTO required_parts (project_name, required_part) VALUES 
+('V710_PROJECT', '18K811'),
+('V710_PROJECT', '!MPZ3T-OR-NPZ3T!'),
+('J74_PROJECT', 'V04545'),
+('J74_PROJECT', '!W123-OR-W456!'),
+('DEFAULT_PROJECT', '14K147');
+
+-- =============================================================================
+-- 6. ANALYSIS LOGS TABLE (Optional - for monitoring)
+-- =============================================================================
+CREATE TABLE analysis_logs (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    date DATE NOT NULL,
+    analysis_type NVARCHAR(50) NOT NULL, -- 'VPL' or 'MASTERDATA'
+    status NVARCHAR(20) NOT NULL, -- 'SUCCESS', 'ERROR', 'RUNNING'
+    vpl_records_processed INT NULL,
+    tei_records_processed INT NULL,
+    osl_records_processed INT NULL,
+    issues_found INT NULL,
+    processing_time_ms INT NULL,
+    error_message NVARCHAR(1000) NULL,
+    started_at DATETIME2 DEFAULT GETDATE(),
+    completed_at DATETIME2 NULL
+);
+
+-- =============================================================================
+-- 7. FILE PROCESSING LOG (Optional - for file monitoring)
+-- =============================================================================
+CREATE TABLE file_processing_log (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    file_name NVARCHAR(255) NOT NULL,
+    file_type NVARCHAR(10) NOT NULL, -- 'VPL', 'TEI', 'OSL'
+    file_path NVARCHAR(500) NOT NULL,
+    file_size BIGINT NULL,
+    date_extracted DATE NULL,
+    processing_status NVARCHAR(20) NOT NULL, -- 'PENDING', 'PROCESSING', 'COMPLETED', 'ERROR'
+    records_processed INT NULL,
+    error_message NVARCHAR(1000) NULL,
+    detected_at DATETIME2 DEFAULT GETDATE(),
+    processed_at DATETIME2 NULL
+);
+
+-- =============================================================================
+-- 8. USEFUL VIEWS FOR REPORTING
+-- =============================================================================
+
+-- VPL Analysis Summary View
+CREATE VIEW v_vpl_analysis_summary AS
+SELECT 
+    date,
+    COUNT(*) as total_issues,
+    COUNT(CASE WHEN issue_type IN ('ADDED', 'REMOVED', 'CHANGED', 'PREFIX_CHANGED', 'BASE_CHANGED', 'SUFFIX_CHANGED') THEN 1 END) as change_issues,
+    COUNT(CASE WHEN issue_type = 'MISSING_REQUIRED' THEN 1 END) as missing_required_issues,
+    COUNT(DISTINCT vin) as affected_vins,
+    COUNT(DISTINCT project) as projects_analyzed
+FROM vpl_issues 
+GROUP BY date;
+
+-- Masterdata Analysis Summary View
+CREATE VIEW v_masterdata_analysis_summary AS
+SELECT 
+    date,
+    COUNT(*) as total_issues,
+    COUNT(CASE WHEN issue_type IN ('TEI_NOT_FOUND', 'INNER_MISMATCH', 'NO_DESCRIPTION') THEN 1 END) as tei_issues,
+    COUNT(CASE WHEN issue_type IN ('OSL_NOT_FOUND', 'MISSING_PARAMS') THEN 1 END) as osl_issues,
+    COUNT(CASE WHEN issue_type = 'CK_VIOLATION' THEN 1 END) as ck_violations,
+    COUNT(DISTINCT part_name) as affected_parts
+FROM masterdata_issues 
+GROUP BY date;
+
+-- Recent Analysis Activity View
+CREATE VIEW v_recent_activity AS
+SELECT 
+    'VPL' as analysis_type,
+    date,
+    COUNT(*) as issues_count,
+    'VPL Issues' as description
+FROM vpl_issues 
+WHERE date >= DATEADD(day, -7, GETDATE())
+GROUP BY date
+
+UNION ALL
+
+SELECT 
+    'MASTERDATA' as analysis_type,
+    date,
+    COUNT(*) as issues_count,
+    'Masterdata Issues' as description
+FROM masterdata_issues 
+WHERE date >= DATEADD(day, -7, GETDATE())
+GROUP BY date;
+
+-- =============================================================================
+-- 9. MAINTENANCE PROCEDURES
+-- =============================================================================
+
+-- Cleanup old sessions (run periodically)
+CREATE PROCEDURE sp_cleanup_expired_sessions
+AS
+BEGIN
+    DELETE FROM sessions 
+    WHERE expires_at < GETDATE();
+    
+    SELECT 'Expired sessions cleaned' as result;
+END;
+
+-- Get analysis statistics
+CREATE PROCEDURE sp_get_analysis_stats
+    @date DATE
+AS
+BEGIN
+    SELECT 
+        'VPL' as analysis_type,
+        COUNT(*) as total_issues,
+        COUNT(DISTINCT vin) as affected_vins
+    FROM vpl_issues 
+    WHERE date = @date
+    
+    UNION ALL
+    
+    SELECT 
+        'MASTERDATA' as analysis_type,
+        COUNT(*) as total_issues,
+        COUNT(DISTINCT part_name) as affected_parts
+    FROM masterdata_issues 
+    WHERE date = @date;
+END;
+
+-- =============================================================================
+-- 10. PERFORMANCE OPTIMIZATIONS
+-- =============================================================================
+
+-- Partitioning for large datasets (optional)
+-- ALTER TABLE vpl_issues ADD CONSTRAINT PK_vpl_issues_partitioned 
+-- PRIMARY KEY (id, date);
+
+-- Additional composite indexes for common queries
+CREATE INDEX IX_vpl_issues_date_project ON vpl_issues(date, project);
+CREATE INDEX IX_vpl_issues_date_issue_type ON vpl_issues(date, issue_type);
+CREATE INDEX IX_masterdata_issues_date_issue_type ON masterdata_issues(date, issue_type);
+
+-- =============================================================================
+-- 11. PERMISSIONS AND SECURITY
+-- =============================================================================
+
+-- Create application user (optional - for production security)
+-- CREATE LOGIN vpl_app_user WITH PASSWORD = 'VPL2024!SecurePassword';
+-- CREATE USER vpl_app_user FOR LOGIN vpl_app_user;
+
+-- Grant necessary permissions
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON users TO vpl_app_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON sessions TO vpl_app_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON vpl_issues TO vpl_app_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON masterdata_issues TO vpl_app_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON required_parts TO vpl_app_user;
+
+-- =============================================================================
+-- 12. VERIFICATION QUERIES
+-- =============================================================================
+
+-- Verify schema creation
+SELECT 
+    TABLE_NAME,
+    TABLE_TYPE
+FROM INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_CATALOG = 'VPLAnalyzer'
+ORDER BY TABLE_NAME;
+
+-- Check initial data
+SELECT 'Users' as table_name, COUNT(*) as record_count FROM users
+UNION ALL
+SELECT 'Required Parts' as table_name, COUNT(*) as record_count FROM required_parts;
+
+-- Check indexes
+SELECT 
+    i.name as index_name,
+    t.name as table_name,
+    i.type_desc as index_type
+FROM sys.indexes i
+INNER JOIN sys.tables t ON i.object_id = t.object_id
+WHERE t.name IN ('vpl_issues', 'masterdata_issues', 'users', 'sessions', 'required_parts')
+ORDER BY t.name, i.name;
+
+PRINT 'VPL Analyzer database schema created successfully!';
+PRINT 'Default users: admin/admin123, user/vpl2024';
+PRINT 'Remember to update config.json with correct connection string.';
+
+GO
